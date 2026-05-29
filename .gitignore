@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Django
+*.sqlite3
+db.sqlite3
+/backend/staticfiles/
+*.log
+
+# ML artifacts (regenerate with analytics/ml/train.py)
+/backend/ml_models/*.pkl
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
