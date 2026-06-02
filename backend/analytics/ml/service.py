@@ -131,18 +131,23 @@ class MLService:
     def _rule_based(cls, data: dict, features: list[float]) -> dict:
         """Transparent fallback matching the proposal's 'rule-based risk
         detection' step. Lets the API work before a model is trained.
+
+        Features order (see features.FEATURE_COLUMNS):
+            total_clicks, active_days, mean_clicks_per_day,
+            early_avg_score, num_prev_attempts, studied_credits
         """
-        quiz, lab, assign, midterm, participation, days = features
-        avg = (quiz + lab + assign + midterm) / 4.0
+        total_clicks, active_days, _cpd, early_score, prev_attempts, _credits = features
 
         score = 0.0
-        if avg < 50:
-            score += 0.5
-        elif avg < 60:
-            score += 0.3
-        if participation < 40:
+        if early_score < 40:          # weak early assessment performance
+            score += 0.4
+        elif early_score < 55:
             score += 0.2
-        if days > 14:
+        if total_clicks < 100:        # low engagement
+            score += 0.2
+        if active_days < 5:           # rarely shows up
+            score += 0.2
+        if prev_attempts >= 1:        # repeating the module
             score += 0.2
         score = min(score, 1.0)
 
@@ -151,8 +156,9 @@ class MLService:
             "risk_level": risk_level(score),
             "model_version": cls._version,
             "explanation": {
-                "average_score": round(avg, 2),
-                "participation": participation,
-                "days_since_login": days,
+                "early_avg_score": early_score,
+                "total_clicks": total_clicks,
+                "active_days": active_days,
+                "num_prev_attempts": prev_attempts,
             },
         }

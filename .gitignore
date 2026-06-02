@@ -15,6 +15,9 @@ db.sqlite3
 # ML artifacts (regenerate with analytics/ml/train.py)
 /backend/ml_models/*.pkl
 
+# OULAD dataset (large; download with `python -m analytics.ml.oulad`)
+/backend/data/
+
 # IDE / OS
 .vscode/
 .idea/

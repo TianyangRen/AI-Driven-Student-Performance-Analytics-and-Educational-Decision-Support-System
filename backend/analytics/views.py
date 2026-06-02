@@ -24,9 +24,9 @@ def health(request):
 def predict_risk(request):
     """Predict risk for a single student from feature values.
 
-    Body (all optional, numeric):
-        {"quiz_avg": 55, "lab_avg": 60, "assignment_avg": 48,
-         "midterm": 50, "participation": 30, "days_since_login": 20}
+    Body (all optional, numeric; OULAD early-window features):
+        {"total_clicks": 40, "active_days": 3, "mean_clicks_per_day": 13,
+         "early_avg_score": 35, "num_prev_attempts": 1, "studied_credits": 60}
 
     Optionally pass "student_id" to persist the prediction.
     """

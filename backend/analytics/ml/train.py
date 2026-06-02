@@ -1,24 +1,23 @@
 """Offline model training script.
 
 Run this OUTSIDE the web request cycle to produce the .pkl artifact that
-MLService loads at startup:
+MLService loads at startup.
 
     cd backend
-    python -m analytics.ml.train                # train on synthetic demo data
-    python -m analytics.ml.train --csv data.csv # train on your real CSV
+    python -m analytics.ml.train                 # train on OULAD (downloads if needed)
+    python -m analytics.ml.train --csv data.csv  # train on your own CSV instead
 
-The CSV must contain the FEATURE_COLUMNS plus the TARGET_COLUMN (at_risk).
+The CSV (if used) must contain the FEATURE_COLUMNS plus the TARGET_COLUMN.
 
-This intentionally uses scikit-learn's RandomForest as the default main model
-(per the proposal: LogReg baseline -> RandomForest main -> XGBoost advanced).
-Swap in XGBClassifier once you install xgboost.
+Algorithm route (per the proposal): LogReg baseline -> RandomForest main ->
+XGBoost advanced. This uses RandomForest as the default main model. To use
+XGBoost, install xgboost and swap the estimator below.
 """
 from __future__ import annotations
 
 import argparse
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, roc_auc_score
@@ -27,47 +26,15 @@ from sklearn.model_selection import train_test_split
 # Allow running both as a module (-m) and as a plain script.
 try:
     from analytics.ml.features import FEATURE_COLUMNS, TARGET_COLUMN
+    from analytics.ml.oulad import load_oulad_features, download_oulad, is_downloaded
 except ModuleNotFoundError:  # pragma: no cover
     import sys
 
     sys.path.append(str(Path(__file__).resolve().parents[2]))
     from analytics.ml.features import FEATURE_COLUMNS, TARGET_COLUMN
+    from analytics.ml.oulad import load_oulad_features, download_oulad, is_downloaded
 
-MODEL_VERSION = "rf-v1"
-
-
-def make_synthetic_data(n: int = 1000, seed: int = 42) -> pd.DataFrame:
-    """Generate plausible student data so the pipeline is runnable with no CSV.
-
-    Replace this with real / OULAD-derived data for actual results.
-    """
-    rng = np.random.default_rng(seed)
-    quiz = rng.normal(65, 18, n).clip(0, 100)
-    lab = rng.normal(70, 15, n).clip(0, 100)
-    assignment = rng.normal(68, 16, n).clip(0, 100)
-    midterm = rng.normal(62, 20, n).clip(0, 100)
-    participation = rng.normal(60, 22, n).clip(0, 100)
-    days_since_login = rng.exponential(6, n).clip(0, 60)
-
-    # "True" final outcome driven by the features (+ noise), then thresholded.
-    final = (
-        0.30 * quiz + 0.20 * lab + 0.20 * assignment + 0.30 * midterm
-        - 0.15 * days_since_login + 0.10 * participation
-    )
-    final += rng.normal(0, 6, n)
-    at_risk = (final < 55).astype(int)
-
-    return pd.DataFrame(
-        {
-            "quiz_avg": quiz,
-            "lab_avg": lab,
-            "assignment_avg": assignment,
-            "midterm": midterm,
-            "participation": participation,
-            "days_since_login": days_since_login,
-            TARGET_COLUMN: at_risk,
-        }
-    )
+MODEL_VERSION = "rf-oulad-v1"
 
 
 def train(df: pd.DataFrame, out_dir: Path) -> Path:
@@ -78,7 +45,11 @@ def train(df: pd.DataFrame, out_dir: Path) -> Path:
         X, y, test_size=0.2, stratify=y, random_state=42
     )
 
-    model = RandomForestClassifier(n_estimators=200, max_depth=8, random_state=42)
+    # class_weight balances the (usually) larger not-at-risk group.
+    model = RandomForestClassifier(
+        n_estimators=300, max_depth=12, class_weight="balanced", random_state=42,
+        n_jobs=-1,
+    )
     model.fit(X_train, y_train)
 
     # --- Evaluation (what you show in the report / defense) -----------------
@@ -86,6 +57,11 @@ def train(df: pd.DataFrame, out_dir: Path) -> Path:
     pred = model.predict(X_test)
     print("ROC-AUC:", round(roc_auc_score(y_test, proba), 4))
     print(classification_report(y_test, pred, digits=3))
+    print("Feature importances:")
+    for col, imp in sorted(
+        zip(FEATURE_COLUMNS, model.feature_importances_), key=lambda x: -x[1]
+    ):
+        print(f"  {col:22s} {imp:.4f}")
 
     # --- Persist ------------------------------------------------------------
     import joblib
@@ -96,31 +72,31 @@ def train(df: pd.DataFrame, out_dir: Path) -> Path:
         {"model": model, "version": MODEL_VERSION, "features": FEATURE_COLUMNS},
         out_path,
     )
-    print(f"Saved model -> {out_path}")
+    print(f"\nSaved model -> {out_path}")
     return out_path
 
 
 def main():
     parser = argparse.ArgumentParser(description="Train the risk prediction model.")
-    parser.add_argument("--csv", type=str, default=None, help="Path to training CSV.")
-    parser.add_argument(
-        "--out",
-        type=str,
-        default=str(Path(__file__).resolve().parents[2] / "ml_models"),
-        help="Output directory for the .pkl artifact.",
-    )
+    parser.add_argument("--csv", type=str, default=None,
+                        help="Train on this CSV instead of OULAD.")
+    parser.add_argument("--out", type=str,
+                        default=str(Path(__file__).resolve().parents[2] / "ml_models"),
+                        help="Output directory for the .pkl artifact.")
     args = parser.parse_args()
 
     if args.csv:
         df = pd.read_csv(args.csv)
-        # Basic cleaning: fill numeric NaNs with column means.
         df[FEATURE_COLUMNS] = df[FEATURE_COLUMNS].fillna(
             df[FEATURE_COLUMNS].mean(numeric_only=True)
         )
         print(f"Loaded {len(df)} rows from {args.csv}")
     else:
-        df = make_synthetic_data()
-        print(f"Using {len(df)} synthetic rows (no --csv provided)")
+        if not is_downloaded():
+            download_oulad()
+        df = load_oulad_features()
+        print(f"Loaded {len(df)} OULAD enrolments "
+              f"(at-risk rate {df[TARGET_COLUMN].mean():.1%})")
 
     train(df, Path(args.out))
 
