@@ -14,6 +14,8 @@ class AnalyticsConfig(AppConfig):
         API still works before you run train.py.
         """
         # Import here to avoid side effects during migrations / management cmds.
+        from analytics.ml.grade_service import GradeService
         from analytics.ml.service import MLService
 
         MLService.load()
+        GradeService.load()

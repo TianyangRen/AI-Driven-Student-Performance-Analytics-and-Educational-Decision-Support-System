@@ -44,3 +44,15 @@ class PredictRequestSerializer(serializers.Serializer):
         super().__init__(*args, **kwargs)
         for col in FEATURE_COLUMNS:
             self.fields[col] = serializers.FloatField(required=False)
+
+
+class GradePredictRequestSerializer(serializers.Serializer):
+    """Validates the body of POST /api/predict-grade/.
+
+    Early-grade features are fractions in [0, 1]; all optional (GradeService
+    falls back to training means), but numeric and bounded when present.
+    """
+
+    early_lab_avg = serializers.FloatField(required=False, min_value=0, max_value=1)
+    early_assignment_pct = serializers.FloatField(required=False, min_value=0, max_value=1)
+    early_quiz_avg = serializers.FloatField(required=False, min_value=0, max_value=1)

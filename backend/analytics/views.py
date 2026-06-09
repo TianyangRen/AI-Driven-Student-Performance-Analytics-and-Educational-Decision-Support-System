@@ -3,9 +3,13 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
+from analytics.ml.grade_service import GradeService
 from analytics.ml.service import MLService
 from analytics.models import RiskPrediction, Student
-from analytics.serializers import PredictRequestSerializer
+from analytics.serializers import (
+    GradePredictRequestSerializer,
+    PredictRequestSerializer,
+)
 
 
 @api_view(["GET"])
@@ -14,8 +18,11 @@ def health(request):
     return Response(
         {
             "status": "ok",
-            "model_loaded": MLService.is_model_loaded(),
-            "model_version": MLService.version(),
+            "risk_classifier": {
+                "model_loaded": MLService.is_model_loaded(),
+                "model_version": MLService.version(),
+            },
+            "grade_regressor": GradeService.info(),
         }
     )
 
@@ -55,3 +62,26 @@ def predict_risk(request):
             )
 
     return Response(result)
+
+
+@api_view(["POST"])
+def predict_grade(request):
+    """Project a student's FINAL grade from leakage-free EARLY features.
+
+    Body (all optional, fractions in [0, 1]; local real-data model):
+        {"early_lab_avg": 0.7, "early_assignment_pct": 0.8, "early_quiz_avg": 0.4}
+
+    Returns the projected final grade (0-100) and a risk band
+    (<60 high, 60-70 medium, >=70 low).
+    """
+    if not GradeService.is_loaded():
+        return Response(
+            {"detail": "Grade model not available. Run "
+                       "`python -m analytics.ml.train_real --save`."},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+
+    serializer = GradePredictRequestSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+
+    return Response(GradeService.predict(serializer.validated_data))

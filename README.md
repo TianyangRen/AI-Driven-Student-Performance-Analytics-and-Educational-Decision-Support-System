@@ -41,10 +41,14 @@ backend/
     ├── urls.py
     ├── admin.py            # free data-management UI
     └── ml/
-        ├── features.py     # FEATURE_COLUMNS (single source of truth)
+        ├── features.py     # OULAD FEATURE_COLUMNS (single source of truth)
         ├── oulad.py        # download OULAD + build early-window features
-        ├── service.py      # MLService: load + predict (+ rule-based fallback)
-        └── train.py        # OFFLINE training (on OULAD) -> risk_model.pkl
+        ├── service.py      # MLService: OULAD risk classifier (load + predict)
+        ├── train.py        # OFFLINE training (on OULAD) -> risk_model.pkl
+        ├── real_data.py    # parse & harmonize local gradebooks (dual-track)
+        ├── train_real.py   # early-grade regression + cross-semester experiments
+        ├── simulate_normalization.py  # controlled difficulty simulation
+        └── grade_service.py  # GradeService: local grade regressor (load + predict)
 ```
 
 ## Setup (Windows / PowerShell)
@@ -98,26 +102,49 @@ python -m analytics.ml.oulad --no-download   # rebuild features from local CSVs
 
 ## API
 
-| Method | Path           | Purpose                                  |
-|--------|----------------|------------------------------------------|
-| GET    | `/api/health/` | Liveness + whether a model is loaded     |
-| POST   | `/api/predict/`| Risk score + level + explanation         |
+| Method | Path                  | Purpose                                          |
+|--------|-----------------------|--------------------------------------------------|
+| GET    | `/api/health/`        | Liveness + status of both models                 |
+| POST   | `/api/predict/`       | OULAD risk classifier: risk score + level        |
+| POST   | `/api/predict-grade/` | Local regression: projected final grade + band   |
 
-Example:
+There are **two models**:
+- **Risk classifier** (`rf-oulad-v1`, trained on OULAD) — `/api/predict/`
+- **Grade regressor** (`ridge-grade-v1`, trained on the local gradebooks) —
+  `/api/predict-grade/`: projects the final grade from leakage-free early
+  features and maps it to a risk band (`<60` high, `60–70` medium, `≥70` low).
 
 ```bash
+# Risk classifier (OULAD features)
 curl -X POST http://localhost:8000/api/predict/ \
   -H "Content-Type: application/json" \
   -d '{"total_clicks":40,"active_days":3,"mean_clicks_per_day":13,"early_avg_score":35,"num_prev_attempts":1,"studied_credits":60}'
+
+# Grade regressor (early-grade fractions in [0,1])
+curl -X POST http://localhost:8000/api/predict-grade/ \
+  -H "Content-Type: application/json" \
+  -d '{"early_lab_avg":0.5,"early_assignment_pct":0.4,"early_quiz_avg":0.2}'
 ```
 
 ```json
+// /api/predict-grade/ response
 {
-  "risk_score": 0.86,
+  "predicted_final_grade": 50.6,
   "risk_level": "high",
-  "model_version": "rf-oulad-v1",
-  "explanation": {"early_avg_score": 0.31, "total_clicks": 0.22, "...": 0.0}
+  "model_version": "ridge-grade-v1",
+  "explanation": {"early_assignment_pct": -18.15, "early_quiz_avg": -6.71, "early_lab_avg": -3.27},
+  "thresholds": {"high": "<60", "medium": "60-70", "low": ">=70"}
 }
+```
+
+> The `explanation` for the regressor is the **exact** per-feature contribution
+> in grade points (linear model: prediction = mean + Σ contributions). No SHAP
+> needed.
+
+Train the grade regressor (writes `ml_models/grade_model.pkl`):
+
+```bash
+python -m analytics.ml.train_real --save
 ```
 
 ## Where to go next
