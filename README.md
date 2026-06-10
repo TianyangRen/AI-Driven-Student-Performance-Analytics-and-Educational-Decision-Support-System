@@ -48,6 +48,7 @@ backend/
         ├── real_data.py    # parse & harmonize local gradebooks (dual-track)
         ├── train_real.py   # early-grade regression + cross-semester experiments
         ├── simulate_normalization.py  # controlled difficulty simulation
+        ├── oulad_normalization.py     # normalization effect on real OULAD cohorts
         └── grade_service.py  # GradeService: local grade regressor (load + predict)
 ```
 
