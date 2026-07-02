@@ -110,7 +110,7 @@ apps/imports_app/
 
 | 方法 | 路径 | 说明 | 状态 |
 |---|---|---|---|
-| GET | `/api/v1/imports/template?type=ROSTER\|SCORE\|ACTIVITY&format=csv\|xlsx` | 下载空模板（列头 + 1 行示例）；缺省 format=csv | 新增 |
+| GET | `/api/v1/imports/template?type=ROSTER\|SCORE\|ACTIVITY&fmt=csv\|xlsx` | 下载空模板（列头 + 1 行示例）；缺省 fmt=csv。注意用 `fmt` 而非 `format`——DRF 保留 `format` 作内容协商 | 新增 |
 | POST | `/api/v1/sections/{section_id}/imports` | 上传文件（multipart，字段 `file`、`import_type`），同步解析落库，返回批次摘要 | 改造打桩 |
 | GET | `/api/v1/imports/{batch_id}` | 批次状态 + total/valid/error 计数 | 补字段 |
 | GET | `/api/v1/imports/{batch_id}/errors` | 返回 `error_details` 数组 | 改造空桩 |

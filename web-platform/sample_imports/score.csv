@@ -1,0 +1,16 @@
+student_no,assessment_name,assessment_type,max_score,weight,week_no,score
+S-001,Quiz 1,QUIZ,50,5,1,42
+S-002,Quiz 1,QUIZ,50,5,1,38
+S-003,Quiz 1,QUIZ,50,5,1,29
+S-004,Quiz 1,QUIZ,50,5,1,47
+S-005,Quiz 1,QUIZ,50,5,1,21
+S-001,Lab 1,LAB,100,10,2,88
+S-002,Lab 1,LAB,100,10,2,73
+S-003,Lab 1,LAB,100,10,2,65
+S-004,Lab 1,LAB,100,10,2,91
+S-005,Lab 1,LAB,100,10,2,55
+S-001,Midterm,MIDTERM,100,30,6,76
+S-002,Midterm,MIDTERM,100,30,6,68
+S-003,Midterm,MIDTERM,100,30,6,52
+S-004,Midterm,MIDTERM,100,30,6,84
+S-005,Midterm,MIDTERM,100,30,6,45
