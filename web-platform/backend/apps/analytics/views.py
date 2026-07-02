@@ -107,8 +107,8 @@ def comparisons(request):
     return ok({
         "dimensions": body.get("dimensions", []),
         "series": [
-            {"name": "教学班 A", "data": [72, 75, 78, 76, 80]},
-            {"name": "教学班 B", "data": [68, 70, 73, 74, 76]},
+            {"name": "Section A", "data": [72, 75, 78, 76, 80]},
+            {"name": "Section B", "data": [68, 70, 73, 74, 76]},
         ],
         "labels": ["Quiz 1", "Quiz 2", "Lab 1", "Lab 2", "Midterm"],
     })

@@ -82,6 +82,6 @@ def explanation(request, prediction_id):
         "risk_level": r["risk_level"],
         "model_version": r["model_version"],
         "top_factors": r["top_factors"],
-        "suggestion": "建议教师优先核验近期作业完成情况，并安排一次针对性沟通。",
-        "disclaimer": "该结果仅为教学辅助信号，不构成自动化学术结论。",
+        "suggestion": "Review the student's recent assignment completion first, and arrange a targeted check-in.",
+        "disclaimer": "This result is a teaching-support signal only and is not an automated academic decision.",
     })

@@ -1,7 +1,16 @@
-import { Button, Form, Input, Modal, Select, Space, Table, Typography, message } from 'antd';
 import { useEffect, useState } from 'react';
+import { Button, Form, Input, Modal, Select, Table, Tag, Space, message } from 'antd';
+import {
+  PlusOutlined,
+  ApartmentOutlined,
+  DashboardOutlined,
+  CloudUploadOutlined,
+  ThunderboltOutlined,
+} from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import client from '../api/client';
+import { PageHeader, Panel } from '../components/ui';
+import { palette } from '../theme/tokens';
+import * as api from '../api/resources';
 
 export default function Sections() {
   const navigate = useNavigate();
@@ -13,11 +22,12 @@ export default function Sections() {
 
   const load = () => {
     setLoading(true);
-    Promise.all([client.get('/sections'), client.get('/courses')])
+    Promise.all([api.listSections(), api.listCourses()])
       .then(([s, c]) => {
-        setData(s.data?.data || []);
-        setCourses(c.data?.data || []);
+        setData(s || []);
+        setCourses(c || []);
       })
+      .catch(() => message.error('Failed to load'))
       .finally(() => setLoading(false));
   };
   useEffect(load, []);
@@ -25,7 +35,7 @@ export default function Sections() {
   const onCreate = async () => {
     const values = await form.validateFields();
     try {
-      await client.post('/sections', values);
+      await api.createSection(values);
       message.success('Section created');
       setOpen(false);
       form.resetFields();
@@ -37,37 +47,73 @@ export default function Sections() {
 
   return (
     <div>
-      <Space style={{ marginBottom: 16, justifyContent: 'space-between', display: 'flex' }}>
-        <Typography.Title level={3} style={{ margin: 0 }}>Sections</Typography.Title>
-        <Button type="primary" onClick={() => setOpen(true)}>New section</Button>
-      </Space>
-      <Table
-        rowKey="id"
-        loading={loading}
-        dataSource={data}
-        columns={[
-          { title: 'ID', dataIndex: 'id', width: 80 },
-          { title: 'Course', render: (_, r) => `${r.course_code} · ${r.course_name}` },
-          { title: 'Section code', dataIndex: 'section_code' },
-          { title: 'Status', dataIndex: 'status' },
-          {
-            title: 'Actions',
-            render: (_, r) => (
-              <Space>
-                <a onClick={() => navigate(`/sections/${r.id}/overview`)}>Overview</a>
-                <a onClick={() => navigate(`/sections/${r.id}/import`)}>Import</a>
-                <a onClick={() => navigate(`/sections/${r.id}/predictions`)}>Predict</a>
-              </Space>
-            ),
-          },
-        ]}
+      <PageHeader
+        title="Sections"
+        subtitle="A section is the core analysis unit for data import, metrics and risk prediction"
+        extra={
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>
+            New section
+          </Button>
+        }
       />
-      <Modal title="New section" open={open} onCancel={() => setOpen(false)} onOk={onCreate}>
-        <Form form={form} layout="vertical">
-          <Form.Item name="course" label="Course" rules={[{ required: true }]}>
-            <Select options={courses.map((c) => ({ value: c.id, label: `${c.code} · ${c.name}` }))} />
+      <Panel icon={<ApartmentOutlined />} title="Section list">
+        <Table
+          className="cockpit-table"
+          rowKey="id"
+          loading={loading}
+          dataSource={data}
+          size="middle"
+          columns={[
+            { title: 'ID', dataIndex: 'id', width: 70 },
+            {
+              title: 'Course',
+              render: (_, r) => (
+                <span>
+                  <span style={{ color: palette.cyan, fontWeight: 600 }}>{r.course_code}</span>
+                  <span style={{ color: palette.textSecondary }}> · {r.course_name}</span>
+                </span>
+              ),
+            },
+            {
+              title: 'Section code',
+              dataIndex: 'section_code',
+              render: (v) => <span style={{ color: '#fff' }}>{v}</span>,
+            },
+            {
+              title: 'Status',
+              dataIndex: 'status',
+              render: (v) => <Tag color={v === 'ACTIVE' ? 'green' : 'default'}>{v}</Tag>,
+            },
+            {
+              title: 'Actions',
+              width: 280,
+              render: (_, r) => (
+                <Space size={4}>
+                  <Button type="link" size="small" icon={<DashboardOutlined />} onClick={() => navigate(`/sections/${r.id}/overview`)}>
+                    Overview
+                  </Button>
+                  <Button type="link" size="small" icon={<CloudUploadOutlined />} onClick={() => navigate(`/sections/${r.id}/import`)}>
+                    Import
+                  </Button>
+                  <Button type="link" size="small" icon={<ThunderboltOutlined />} onClick={() => navigate(`/sections/${r.id}/predictions`)}>
+                    Predict
+                  </Button>
+                </Space>
+              ),
+            },
+          ]}
+        />
+      </Panel>
+
+      <Modal title="New section" open={open} onCancel={() => setOpen(false)} onOk={onCreate} okText="Create" cancelText="Cancel">
+        <Form form={form} layout="vertical" style={{ marginTop: 12 }}>
+          <Form.Item name="course" label="Course" rules={[{ required: true, message: 'Please select a course' }]}>
+            <Select
+              placeholder="Select a course"
+              options={courses.map((c) => ({ value: c.id, label: `${c.code} · ${c.name}` }))}
+            />
           </Form.Item>
-          <Form.Item name="section_code" label="Section code" rules={[{ required: true }]}>
+          <Form.Item name="section_code" label="Section code" rules={[{ required: true, message: 'Please enter a section code' }]}>
             <Input placeholder="01" />
           </Form.Item>
         </Form>

@@ -1,51 +1,70 @@
-import { Button, Card, Form, Select, Typography, message } from 'antd';
 import { useState } from 'react';
-import ReactECharts from 'echarts-for-react';
-import client from '../api/client';
+import { Button, Select, Empty, message } from 'antd';
+import { BarChartOutlined, SwapOutlined } from '@ant-design/icons';
+import { PageHeader, Panel, ChartCard } from '../components/ui';
+import { buildGroupedBar } from '../theme/echarts';
+import { palette } from '../theme/tokens';
+import * as api from '../api/resources';
+
+const DIMENSIONS = [
+  { value: 'SECTION', label: 'By section' },
+  { value: 'COURSE', label: 'By course' },
+  { value: 'TERM', label: 'By term' },
+  { value: 'ASSESSMENT_TYPE', label: 'By assessment type' },
+];
 
 export default function Comparisons() {
+  const [dimension, setDimension] = useState('SECTION');
   const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const onRun = async (values) => {
+  const onRun = async () => {
+    setLoading(true);
     try {
-      const r = await client.post('/analytics/comparisons', values);
-      setResult(r.data?.data);
-    } catch (e) {
+      const data = await api.runComparison({ dimension });
+      setResult(data);
+    } catch {
       message.error('Comparison failed');
+    } finally {
+      setLoading(false);
     }
-  };
-
-  const option = result && {
-    tooltip: { trigger: 'axis' },
-    legend: { data: result.series.map((s) => s.name) },
-    xAxis: { type: 'category', data: result.labels },
-    yAxis: { type: 'value' },
-    series: result.series.map((s) => ({ name: s.name, type: 'bar', data: s.data })),
   };
 
   return (
     <div>
-      <Typography.Title level={3}>Comparisons</Typography.Title>
-      <Card>
-        <Form layout="inline" onFinish={onRun} initialValues={{ dimension: 'SECTION' }}>
-          <Form.Item name="dimension" label="Dimension">
-            <Select
-              style={{ width: 220 }}
-              options={[
-                { value: 'SECTION', label: 'By section' },
-                { value: 'COURSE', label: 'By course' },
-                { value: 'TERM', label: 'By term' },
-                { value: 'ASSESSMENT_TYPE', label: 'By assessment type' },
-              ]}
-            />
-          </Form.Item>
-          <Form.Item><Button htmlType="submit" type="primary">Generate</Button></Form.Item>
-        </Form>
-      </Card>
-      {option && (
-        <Card title="Comparison result" style={{ marginTop: 16 }}>
-          <ReactECharts option={option} style={{ height: 360 }} />
-        </Card>
+      <PageHeader
+        title="Comparisons"
+        subtitle="Cohort performance comparison across sections / courses / terms / assessment types"
+        extra={
+          <>
+            <Select value={dimension} onChange={setDimension} style={{ width: 200 }} options={DIMENSIONS} />
+            <Button type="primary" icon={<SwapOutlined />} loading={loading} onClick={onRun}>
+              Generate
+            </Button>
+          </>
+        }
+      />
+
+      {result ? (
+        <ChartCard
+          title="Comparison result"
+          icon={<BarChartOutlined />}
+          subtitle={`Dimension: ${DIMENSIONS.find((d) => d.value === dimension)?.label}`}
+          height={420}
+          loading={loading}
+          option={buildGroupedBar({ categories: result.labels, series: result.series })}
+        />
+      ) : (
+        <Panel bodyStyle={{ padding: 60 }}>
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={
+              <span style={{ color: palette.textSecondary }}>
+                Choose a dimension and click “Generate” to view results
+              </span>
+            }
+          />
+        </Panel>
       )}
     </div>
   );
