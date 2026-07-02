@@ -16,6 +16,7 @@ class CourseSectionSerializer(serializers.ModelSerializer):
     class Meta:
         model = CourseSection
         fields = ["id", "course", "course_code", "course_name", "section_code", "instructor", "status"]
+        read_only_fields = ["instructor"]  # 由 perform_create 自动设为当前用户
 
 
 class StudentSerializer(serializers.ModelSerializer):

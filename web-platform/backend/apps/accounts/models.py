@@ -15,3 +15,8 @@ class User(AbstractUser):
 
     def __str__(self):
         return f"{self.username} ({self.role})"
+
+    @property
+    def is_admin(self) -> bool:
+        """业务层的最高权限：显式 ADMIN 角色，或 Django 超级用户。"""
+        return self.role == "ADMIN" or self.is_superuser

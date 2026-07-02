@@ -14,7 +14,7 @@ class CourseViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        if self.request.user.role == "ADMIN":
+        if self.request.user.is_admin:
             return qs
         return qs.filter(owner=self.request.user)
 
@@ -29,7 +29,7 @@ class CourseSectionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        if self.request.user.role == "ADMIN":
+        if self.request.user.is_admin:
             return qs
         return qs.filter(instructor=self.request.user)
 
