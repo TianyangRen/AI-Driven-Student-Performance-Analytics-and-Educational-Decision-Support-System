@@ -17,6 +17,7 @@ backend/ml_models/*.pkl
 # Node
 node_modules/
 dist/
+.vite/
 
 # IDE / OS
 .idea/
