@@ -14,8 +14,8 @@ class AnalyticsConfig(AppConfig):
         API still works before you run train.py.
         """
         # Import here to avoid side effects during migrations / management cmds.
+        # (The OULAD classifier is a research benchmark and is no longer
+        # loaded at startup — see analytics/ml/service.py.)
         from analytics.ml.grade_service import GradeService
-        from analytics.ml.service import MLService
 
-        MLService.load()
         GradeService.load()

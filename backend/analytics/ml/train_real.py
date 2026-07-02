@@ -49,8 +49,41 @@ NORM_FEATURES = ["early_lab_avg_pctl", "early_assignment_pct_pctl", "early_quiz_
 TARGET = "final_grade"
 
 # Deployable model: RAW features (available for a single student without cohort
-# context) predicting the absolute final grade. Ridge won every comparison.
-GRADE_MODEL_VERSION = "ridge-grade-v1"
+# context) predicting the absolute final grade.
+# v2: artifact carries residual_std (LOSO) for intervals & risk probabilities.
+# v3: adds a second, strictly-future head (exam average = Midterm I+II) with
+#     ZERO input overlap, plus an explicit target note: the primary target is
+#     the official COURSE TOTAL (there is no final exam in this course), and
+#     the early inputs make up ~8.8% of that total (disclosed, not hidden).
+# v4: robust loss (Huber) — the single lowest final (33) is a mid-course
+#     disengagement case, not a measured-ability point; Huber keeps it in the
+#     data without letting it distort the fit. Sensitivity (with/without that
+#     case) is computed and shipped in the artifact.
+GRADE_MODEL_VERSION = "huber-grade-v4"
+
+TARGET_NOTE = (
+    "Primary target = official course total (Adjusted Final Grade, /100). "
+    "This course has NO final exam; the total = labs + assignments + quizzes "
+    "+ midterm I & II + project. Early input components constitute ~8.8% of "
+    "the total (disclosed overlap). The exam head predicts the strictly-"
+    "future Midterm I+II average (% of max) with zero input overlap. "
+    "Fitted with Huber (robust) loss; grades concentrate at 70-96, so the "
+    "model separates relative standing among engaged students — behavioural "
+    "dropout risk is handled by the separate disengagement track."
+)
+
+
+def make_estimator():
+    """The deployed estimator: linear + robust (Huber) loss.
+
+    Robust because the one catastrophic outcome in the data (final 33) is a
+    disengagement artifact; least squares would let that single point tilt
+    the coefficients. Still linear -> the exact per-feature explanation in
+    GradeService keeps working.
+    """
+    from sklearn.linear_model import HuberRegressor
+
+    return HuberRegressor(epsilon=1.35, alpha=1e-4, max_iter=2000)
 
 
 def make_pipeline(model):
@@ -65,6 +98,7 @@ def make_pipeline(model):
 def _models():
     return {
         "Ridge": Ridge(alpha=1.0),
+        "Huber": make_estimator(),
         "RandomForest": RandomForestRegressor(
             n_estimators=300, max_depth=4, random_state=42, n_jobs=-1
         ),
@@ -131,12 +165,62 @@ def save_grade_model(df):
 
     X = df[RAW_FEATURES].to_numpy()
     y = df[TARGET].to_numpy()
-    pipe = make_pipeline(Ridge(alpha=1.0))
+    pipe = make_pipeline(make_estimator())
     pipe.fit(X, y)
 
-    # Honest cross-semester metric to ship alongside the model.
+    groups = df["offering"].to_numpy()
     gkf = GroupKFold(n_splits=df["offering"].nunique())
-    loso = evaluate(df, RAW_FEATURES, gkf, df["offering"].to_numpy())["Ridge"]
+
+    def _loso(frame, estimator_factory):
+        """LOSO MAE + residuals for an arbitrary subset / estimator."""
+        Xf = frame[RAW_FEATURES].to_numpy()
+        yf = frame[TARGET].to_numpy()
+        gf = frame["offering"].to_numpy()
+        kf = GroupKFold(n_splits=len(np.unique(gf)))
+        res = []
+        for tr, te in kf.split(Xf, yf, gf):
+            p = make_pipeline(estimator_factory())
+            p.fit(Xf[tr], yf[tr])
+            res.extend(yf[te] - p.predict(Xf[te]))
+        res = np.asarray(res)
+        return float(np.mean(np.abs(res))), res
+
+    # Honest cross-semester metric + uncertainty sigma (never in-sample).
+    huber_mae, residuals = _loso(df, make_estimator)
+    residual_std = float(np.std(residuals, ddof=1))
+    loso = evaluate(df, RAW_FEATURES, gkf, groups)["Huber"]
+
+    # Sensitivity: does the single disengagement outlier (final < 50) drive
+    # the numbers? Compare Ridge/Huber on all data and Huber without it.
+    ridge_mae, _ = _loso(df, lambda: Ridge(alpha=1.0))
+    excl = df[df[TARGET] >= 50]
+    huber_excl_mae, _ = _loso(excl, make_estimator)
+    sensitivity = {
+        "ridge_all_mae": round(ridge_mae, 2),
+        "huber_all_mae": round(huber_mae, 2),
+        "huber_excl_dropout_mae": round(huber_excl_mae, 2),
+        "n_excluded": int(len(df) - len(excl)),
+        "note": "excluded = final < 50 (the mid-course disengagement case)",
+    }
+
+    # --- Second head: strictly-future exam average (Midterm I+II, 0-100) ----
+    # Zero overlap with the early inputs -> demonstrates genuine prediction.
+    exam_y_all = df["abs_midterm"] * 100
+    emask = exam_y_all.notna().to_numpy()
+    Xe, ye, ge = X[emask], exam_y_all[emask].to_numpy(), groups[emask]
+    exam_pipe = make_pipeline(make_estimator())
+    exam_pipe.fit(Xe, ye)
+    epreds, etrues, eres = [], [], []
+    egkf = GroupKFold(n_splits=len(np.unique(ge)))
+    for tr, te in egkf.split(Xe, ye, ge):
+        p = make_pipeline(make_estimator())
+        p.fit(Xe[tr], ye[tr])
+        pr = p.predict(Xe[te])
+        epreds.extend(pr); etrues.extend(ye[te]); eres.extend(ye[te] - pr)
+    from sklearn.metrics import mean_absolute_error as _mae, r2_score as _r2
+    exam_metrics = {"mae": float(_mae(etrues, epreds)),
+                    "r2": float(_r2(etrues, epreds))}
+    exam_residual_std = float(np.std(eres, ddof=1))
 
     out_dir = Path(__file__).resolve().parents[2] / "ml_models"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -146,14 +230,27 @@ def save_grade_model(df):
         "version": GRADE_MODEL_VERSION,
         "features": RAW_FEATURES,
         "target": TARGET,
+        "target_note": TARGET_NOTE,
         "feature_means": df[RAW_FEATURES].mean().to_dict(),
         "metrics_loso": {"mae": loso[0], "rmse": loso[1], "r2": loso[2]},
+        "residual_std": residual_std,
+        "sensitivity": sensitivity,
+        "exam_model": exam_pipe,
+        "exam_metrics_loso": exam_metrics,
+        "exam_residual_std": exam_residual_std,
         "n_train": int(len(df)),
         "trained_at": datetime.datetime.now().isoformat(timespec="seconds"),
     }, out_path)
     print(f"\nSaved grade regression model -> {out_path}")
-    print(f"  version={GRADE_MODEL_VERSION}  n={len(df)}  "
-          f"LOSO MAE={loso[0]:.2f}  R2={loso[2]:.3f}")
+    print(f"  course-total head (Huber): n={len(df)}  LOSO MAE={loso[0]:.2f}  "
+          f"R2={loso[2]:.3f}  sigma={residual_std:.2f}")
+    print(f"  exam head (strictly future): n={int(emask.sum())}  "
+          f"LOSO MAE={exam_metrics['mae']:.2f}  R2={exam_metrics['r2']:.3f}  "
+          f"sigma={exam_residual_std:.2f}")
+    print(f"  sensitivity: Ridge-all {sensitivity['ridge_all_mae']} | "
+          f"Huber-all {sensitivity['huber_all_mae']} | "
+          f"Huber-excl-dropout {sensitivity['huber_excl_dropout_mae']} "
+          f"(excluded {sensitivity['n_excluded']})")
     return out_path
 
 

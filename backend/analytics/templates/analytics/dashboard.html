@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Student performance analysis</title>
+<style>
+  :root{--ink:#1a1a1a;--muted:#6b6b6b;--line:#e4e2dc;--card:#faf9f7;--good:#c0dd97;--goodbg:#eaf3de;--warn:#fac775;--bad:#f7c1c1;
+        --goodtx:#173404;--warntx:#412402;--badtx:#501313}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;color:var(--ink);background:#fff;padding:28px 32px;max-width:1100px;margin:0 auto}
+  h1{font-size:22px;font-weight:600;margin:0}
+  .sub{font-size:13px;color:var(--muted);margin:4px 0 20px}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px}
+  .kpi{background:var(--card);border-radius:10px;padding:14px 16px}
+  .kpi .l{font-size:12px;color:var(--muted)}
+  .kpi .v{font-size:24px;font-weight:600;margin-top:2px}
+  .kpi .t{font-size:11px;color:var(--muted)}
+  h2{font-size:16px;font-weight:600;margin:26px 0 10px}
+  .boards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+  .board{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;text-align:left}
+  .board:hover{background:var(--card)}
+  .board .d{font-size:14px;font-weight:600}
+  .board .n{font-size:22px;font-weight:600;margin:2px 0}
+  .board .s{font-size:12px;color:var(--muted)}
+  .board[aria-pressed="true"]{border-color:var(--ink)}
+  .seg{display:flex;gap:8px;align-items:center;margin:6px 0 12px;flex-wrap:wrap}
+  .seg button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 14px;font-size:13px;cursor:pointer;color:var(--muted)}
+  .seg button[aria-pressed="true"]{border-color:var(--ink);color:var(--ink);background:var(--card)}
+  table{width:100%;border-collapse:collapse;table-layout:fixed}
+  th{font-size:12px;color:var(--muted);font-weight:600;padding:8px 4px;text-align:center;cursor:pointer;user-select:none}
+  th.name{text-align:left;cursor:default}
+  td{font-size:13px;padding:5px 4px;text-align:center}
+  tr.grp{border-top:1px solid var(--line);cursor:pointer}
+  tr.grp:hover{background:var(--card)}
+  tr.stu{background:var(--card)}
+  .cell{border-radius:6px;padding:4px 2px;font-size:12px}
+  .pill{font-size:11px;padding:2px 9px;border-radius:999px;white-space:nowrap}
+  .chip{display:inline-block;font-size:10px;padding:1px 7px;border-radius:999px;background:var(--warn);color:var(--warntx);margin:1px}
+  .note{font-size:11px;color:var(--muted);margin-top:10px;line-height:1.5}
+  .legend{display:flex;gap:14px;font-size:11px;color:var(--muted);align-items:center}
+  .sq{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+  #boardDetail{margin-top:12px}
+  .interval{font-size:10px;color:var(--muted)}
+</style>
+</head>
+<body>
+<h1>Student performance analysis</h1>
+<p class="sub" id="metaNote">Loading…</p>
+
+<div class="kpis" id="kpis"></div>
+
+<h2>Weakness boards <span style="font-weight:400;font-size:12px;color:var(--muted)">bottom quartile per dimension · a student can appear on several boards · click to inspect</span></h2>
+<div class="boards" id="boards"></div>
+<div id="boardDetail"></div>
+
+<h2>Early-warning timeline <span style="font-weight:400;font-size:12px;color:var(--muted)">how early can we warn, and how accurately?</span></h2>
+<div id="timeline"></div>
+
+<h2>Assessment quality <span style="font-weight:400;font-size:12px;color:var(--muted)">does each assessment actually measure anything? (CTT item analysis)</span></h2>
+<div id="quality"></div>
+
+<h2 style="display:flex;justify-content:space-between;align-items:baseline">Performance groups
+  <span class="legend"><span><span class="sq" style="background:var(--good)"></span>strong</span>
+  <span><span class="sq" style="background:var(--warn)"></span>weak</span>
+  <span><span class="sq" style="background:var(--bad)"></span>at risk</span></span></h2>
+<div class="seg" id="modeSeg">
+  <span style="font-size:13px;color:var(--muted)">Group by</span>
+  <button data-mode="outcome_final" aria-pressed="true">Final grade</button>
+  <button data-mode="outcome_projected" aria-pressed="false">Projected grade</button>
+</div>
+<table>
+  <colgroup><col style="width:24%"><col style="width:7%"><col style="width:10%"><col style="width:10%"><col style="width:10%"><col style="width:10%"><col style="width:15%"><col style="width:14%"></colgroup>
+  <thead><tr id="thead"></tr></thead>
+  <tbody id="tbody"></tbody>
+</table>
+<p class="note" id="footNote"></p>
+
+<script>
+let DATA=null,TIMELINE=null,QUALITY=null,DECLINING={};
+const state={mode:'outcome_final',open:{},sortKey:'projected_avg',sortDir:'desc',board:null};
+const DIMKEYS=['Labs','Quiz','Assign','Mid'];
+
+function pShade(p){if(p>=75)return['var(--good)','var(--goodtx)'];if(p>=50)return['var(--goodbg)','var(--goodtx)'];if(p>=25)return['var(--warn)','var(--warntx)'];return['var(--bad)','var(--badtx)'];}
+function gShade(g){if(g>=80)return['var(--good)','var(--goodtx)'];if(g>=70)return['var(--goodbg)','var(--goodtx)'];if(g>=60)return['var(--warn)','var(--warntx)'];return['var(--bad)','var(--badtx)'];}
+function riskPill(r){const m={low:['#eaf3de','#173404','low'],medium:['#faeeda','#633806','medium'],high:['#fcebeb','#791f1f','high']};const c=m[r]||m.low;return `<span class="pill" style="background:${c[0]};color:${c[1]}">${c[2]}</span>`;}
+
+function kpis(){
+  const c=DATA.class_stats;
+  const items=[['Students',c.n,''],['Projected mean',c.projected_mean,'course total /100'],
+    ['Score spread (CV)',c.cv_pct+'%',c.cv_pct<12?'homogeneous':'mixed'],
+    ['Disengaged',c.n_disengaged,'stopped submitting — behavioural risk'],
+    ['Uneven students',c.n_uneven,'one clear weak spot'],
+    ['Weak in ≥2 dims',c.n_multi_weak,'need broader support']];
+  document.getElementById('kpis').innerHTML=items.map(i=>`<div class="kpi"><div class="l">${i[0]}</div><div class="v">${i[1]}</div><div class="t">${i[2]}</div></div>`).join('');
+}
+
+function boards(){
+  const dz=DATA.disengagement;
+  document.getElementById('boards').innerHTML=DATA.weakness_boards.map(b=>
+    `<button class="board" data-dim="${b.dim}" aria-pressed="${state.board===b.dim}">
+      <div class="d">Weak in ${b.dim}</div><div class="n">${b.n}</div>
+      <div class="s">${b.share_pct}% of class</div></button>`).join('')+
+    `<button class="board" data-dim="__dz" aria-pressed="${state.board==='__dz'}" style="border-color:#e24b4a">
+      <div class="d" style="color:#791f1f">Disengaged</div><div class="n" style="color:#791f1f">${dz.n_disengaged}</div>
+      <div class="s">+ ${dz.n_gaps} with gaps — stopped submitting</div></button>`;
+  const det=document.getElementById('boardDetail');
+  if(!state.board){det.innerHTML='';return;}
+  if(state.board==='__dz'){
+    det.innerHTML=`<p class="note" style="margin:8px 0 6px">Behavioural track — ${dz.rule} Missing work is itself a risk signal: ceiling components (labs/assignments) act as attendance sensors.</p>`+
+      `<table><colgroup><col style="width:20%"><col style="width:14%"><col style="width:14%"><col style="width:18%"><col style="width:16%"><col style="width:18%"></colgroup>
+      <thead><tr><th class="name">Student</th><th>Semester</th><th>Tag</th><th>Misses (late)</th><th>Projected</th><th>Final</th></tr></thead><tbody>`+
+      dz.members.map(m=>{const tagc=m.tag==='disengaged'?['#fcebeb','#791f1f']:['#faeeda','#633806'];
+        return `<tr class="stu"><td style="text-align:left;padding-left:10px">${m.id}</td><td>${m.offering.replace('Data-','')}</td>
+        <td><span class="pill" style="background:${tagc[0]};color:${tagc[1]}">${m.tag}</span></td>
+        <td>${m.missed_total} (${m.missed_late})</td><td>${m.projected.toFixed(0)}</td><td>${m.final.toFixed(0)}</td></tr>`;}).join('')+'</tbody></table>';
+    return;
+  }
+  const b=DATA.weakness_boards.find(x=>x.dim===state.board);
+  det.innerHTML=`<p class="note" style="margin:8px 0 6px">${b.definition} — sorted weakest first.</p>`+
+    `<table><colgroup><col style="width:22%"><col style="width:16%"><col style="width:14%"><col style="width:16%"><col style="width:32%"></colgroup>
+    <thead><tr><th class="name">Student</th><th>Semester</th><th>${b.dim} pctl</th><th>Projected</th><th class="name" style="text-align:center">Also weak in</th></tr></thead><tbody>`+
+    b.members.map(m=>{const sh=pShade(m.pctl);const gs=gShade(m.projected);
+      return `<tr class="stu"><td style="text-align:left;padding-left:10px">${m.id}</td><td>${m.offering.replace('Data-','')}</td>
+      <td><span class="cell" style="background:${sh[0]};color:${sh[1]};display:block">${m.pctl.toFixed(0)}</span></td>
+      <td><span class="cell" style="background:${gs[0]};color:${gs[1]};display:block">${m.projected.toFixed(0)}</span></td>
+      <td>${m.also_weak_in.length?m.also_weak_in.map(w=>`<span class="chip">${w}</span>`).join(''):'<span style="font-size:11px;color:var(--muted)">only '+b.dim+'</span>'}</td></tr>`;}).join('')+'</tbody></table>';
+}
+
+function renderTimeline(){
+  if(!TIMELINE){document.getElementById('timeline').innerHTML='<p class="note">timeline unavailable</p>';return;}
+  const rows=TIMELINE.curve.map(c=>
+    `<tr style="border-top:1px solid var(--line)"><td style="text-align:left;padding:6px 4px;font-weight:600">${c.snapshot} <span style="font-weight:400;color:var(--muted)">~wk ${c.approx_week}</span></td>
+     <td style="text-align:left;font-size:12px;color:var(--muted)">${c.features.join(' + ')}</td>
+     <td>${c.mae.toFixed(2)}</td><td>${c.r2.toFixed(2)}</td></tr>`).join('');
+  const sc=TIMELINE.sanity_check;
+  const dec=TIMELINE.declining.slice(0,8).map(d=>{
+    const keys=Object.keys(d.preds);
+    const seq=keys.map(k=>d.preds[k].toFixed(0)).join(' → ');
+    return `<tr class="stu"><td style="text-align:left;padding:4px 10px">${d.id} <span style="font-size:10px;color:var(--muted)">(${d.offering.replace('Data-','')})</span></td>
+      <td style="font-size:12px">${seq}</td><td>${d.max_drop.toFixed(1)}</td><td>${d.final.toFixed(0)}</td></tr>`;}).join('');
+  document.getElementById('timeline').innerHTML=
+    `<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
+      <div><table><thead><tr><th class="name">Snapshot</th><th class="name">Data available</th><th>MAE</th><th>R²</th></tr></thead><tbody>${rows}</tbody></table>
+        <p class="note">Reliable from ~week 3; precision roughly doubles at week 9 once Midterm I lands. All numbers leave-one-semester-out.</p></div>
+      <div><p style="font-size:13px;margin:0 0 6px"><span class="pill" style="background:#fcebeb;color:#791f1f">${sc.n_declining} declining</span>
+        <span style="font-size:12px;color:var(--muted)"> mean final ${sc.declining_mean_final} vs stable ${sc.stable_mean_final} — the alert carries real signal</span></p>
+        <table><thead><tr><th class="name">Student</th><th>W3 → W6 → W9 → W12</th><th>Max drop</th><th>Final</th></tr></thead><tbody>${dec}</tbody></table>
+        <p class="note">${TIMELINE.meta.alert_rule}; trajectories are out-of-fold (model never saw that semester).</p></div>
+    </div>`;
+}
+
+function renderQuality(){
+  if(!QUALITY){document.getElementById('quality').innerHTML='<p class="note">quality panel unavailable</p>';return;}
+  const vColor=v=>v==='good discriminator'?['#eaf3de','#173404']:(v==='weak'?['#faeeda','#633806']:['#fcebeb','#791f1f']);
+  const rows=QUALITY.components.map(c=>{
+    const vc=vColor(c.verdict);
+    const r=c.discrimination_r==null?'--':c.discrimination_r.toFixed(2);
+    return `<tr style="border-top:1px solid var(--line)"><td style="text-align:left;padding:4px 4px">${c.label}</td>
+      <td style="font-size:12px;color:var(--muted)">${c.category}</td><td>${c.difficulty_pct.toFixed(0)}%</td>
+      <td>${r}</td><td>${c.ceiling_pct.toFixed(0)}%</td>
+      <td><span class="pill" style="background:${vc[0]};color:${vc[1]}">${c.verdict}</span></td></tr>`;}).join('');
+  document.getElementById('quality').innerHTML=
+    `<p style="font-size:13px;margin:0 0 8px">${QUALITY.insights.map(i=>'· '+i).join('<br>')}</p>
+     <details><summary style="font-size:13px;color:var(--muted);cursor:pointer">Per-component table (${QUALITY.components.length} components, pooled over 4 semesters)</summary>
+     <table style="margin-top:8px"><thead><tr><th class="name">Component</th><th class="name">Category</th><th>Difficulty</th><th>Discrimination r</th><th>Ceiling</th><th>Verdict</th></tr></thead>
+     <tbody>${rows}</tbody></table>
+     <p class="note">${QUALITY.meta.caveat}</p></details>`;
+}
+
+function head(){
+  let h='<th class="name">Group · homogeneity</th><th>n</th>';
+  DIMKEYS.forEach(k=>{const act=state.sortKey===k;h+=`<th data-sort="${k}" style="${act?'color:var(--ink)':''}">${k}${act?(state.sortDir==='asc'?' ↑':' ↓'):''}</th>`;});
+  const act=state.sortKey==='projected_avg';
+  h+=`<th data-sort="projected_avg" style="${act?'color:var(--ink)':''}">Projected${act?(state.sortDir==='asc'?' ↑':' ↓'):''}</th><th>Risk</th>`;
+  document.getElementById('thead').innerHTML=h;
+}
+
+function grpRisk(g){if(g.n_high)return riskPill('high').replace('>high<','>'+g.n_high+' at risk<');if(g.n_medium)return riskPill('medium').replace('>medium<','>'+g.n_medium+' watch<');return riskPill('low').replace('>low<','>on track<');}
+function homoTag(g){const c=g.homog_tag==='tight'?'#3b6d11':(g.homog_tag==='mixed'?'#854f0b':'#a32d2d');return `<span style="font-size:11px;color:${c}">σ ${g.homogeneity.toFixed(0)} · ${g.homog_tag}</span>`;}
+
+function body(){
+  const gs=[...DATA.groups[state.mode]].sort((a,b)=>{
+    const av=state.sortKey==='projected_avg'?a.projected_avg:a.dim_avgs[state.sortKey];
+    const bv=state.sortKey==='projected_avg'?b.projected_avg:b.dim_avgs[state.sortKey];
+    return state.sortDir==='asc'?av-bv:bv-av;});
+  let html='';
+  gs.forEach(g=>{
+    const open=state.open[state.mode+':'+g.key];
+    const cells=DIMKEYS.map(k=>{const sh=pShade(g.dim_avgs[k]);return `<td><span class="cell" style="background:${sh[0]};color:${sh[1]};display:block">${g.dim_avgs[k].toFixed(0)}</span></td>`;}).join('');
+    const gsd=gShade(g.projected_avg);
+    html+=`<tr class="grp" data-g="${g.key}"><td style="text-align:left;padding:8px 4px">
+      <span style="font-size:13px;font-weight:600">${open?'▾':'▸'} ${g.name}</span><br><span style="margin-left:16px">${homoTag(g)}</span></td>
+      <td style="color:var(--muted)">${g.n}</td>${cells}
+      <td><span class="cell" style="background:${gsd[0]};color:${gsd[1]};display:block">${g.projected_avg.toFixed(0)}</span></td>
+      <td>${grpRisk(g)}</td></tr>`;
+    if(open){
+      [...g.members].sort((a,b)=>b.projected-a.projected).forEach(m=>{
+        const sc=DIMKEYS.map(k=>{const sh=pShade(m.dims[k]);return `<td><span class="cell" style="background:${sh[0]};color:${sh[1]};display:block">${m.dims[k].toFixed(0)}</span></td>`;}).join('');
+        const gm=gShade(m.projected);
+        let chips=m.weak_in.length?m.weak_in.map(w=>`<span class="chip">weak: ${w}</span>`).join(''):'';
+        if(m.engagement==='disengaged')chips+=`<span class="chip" style="background:#fcebeb;color:#791f1f">disengaged</span>`;
+        else if(m.engagement==='gaps')chips+=`<span class="chip">gaps</span>`;
+        if(DECLINING[m.id])chips+=`<span class="chip" style="background:#fcebeb;color:#791f1f">declining ${DECLINING[m.id].toFixed(0)}</span>`;
+        chips=chips?('<br>'+chips):'';
+        html+=`<tr class="stu"><td style="text-align:left;padding:4px 4px 4px 22px;font-size:12px;color:var(--muted)">${m.id} <span style="font-size:10px">(${m.offering.replace('Data-','')})</span>${chips}</td>
+        <td></td>${sc}
+        <td><span class="cell" style="background:${gm[0]};color:${gm[1]};display:block">${m.projected.toFixed(0)}</span><span class="interval">${m.lo.toFixed(0)}–${m.hi.toFixed(0)}</span></td>
+        <td>${riskPill(m.risk)}</td></tr>`;});
+    }
+  });
+  document.getElementById('tbody').innerHTML=html;
+}
+
+function render(){kpis();boards();head();body();
+  document.querySelectorAll('#modeSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.mode===state.mode));}
+
+document.getElementById('modeSeg').addEventListener('click',e=>{const b=e.target.closest('[data-mode]');if(!b)return;state.mode=b.dataset.mode;render();});
+document.getElementById('boards').addEventListener('click',e=>{const b=e.target.closest('[data-dim]');if(!b)return;state.board=state.board===b.dataset.dim?null:b.dataset.dim;render();});
+document.getElementById('thead').addEventListener('click',e=>{const th=e.target.closest('[data-sort]');if(!th)return;const k=th.dataset.sort;
+  if(state.sortKey===k){state.sortDir=state.sortDir==='asc'?'desc':'asc';}else{state.sortKey=k;state.sortDir='desc';}render();});
+document.getElementById('tbody').addEventListener('click',e=>{const tr=e.target.closest('tr.grp');if(!tr)return;const k=state.mode+':'+tr.dataset.g;state.open[k]=!state.open[k];render();});
+
+Promise.all([
+  fetch('/api/cohort-profile/').then(r=>r.json()),
+  fetch('/api/warning-timeline/').then(r=>r.json()).catch(()=>null),
+  fetch('/api/assessment-quality/').then(r=>r.json()).catch(()=>null),
+]).then(([d,t,q])=>{
+  DATA=d;TIMELINE=t;QUALITY=q;
+  if(t)t.declining.forEach(x=>{DECLINING[x.id]=x.max_drop;});
+  document.getElementById('metaNote').textContent='Retrospective view — '+d.meta.data_basis;
+  document.getElementById('footNote').textContent='Dimension cells: within-cohort percentile (full term). Projected: early-features regression of the course total, with 80% interval. Group homogeneity σ: tight = one plan fits the group; mixed/wide = differentiate inside.';
+  renderTimeline();renderQuality();render();
+}).catch(e=>{document.getElementById('metaNote').textContent='Failed to load: '+e;});
+</script>
+</body>
+</html>
