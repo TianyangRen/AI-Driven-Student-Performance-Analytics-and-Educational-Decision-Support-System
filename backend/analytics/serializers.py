@@ -2,7 +2,6 @@
 from rest_framework import serializers
 
 from analytics.models import Assessment, RiskPrediction, Student
-from analytics.ml.features import FEATURE_COLUMNS
 
 
 class AssessmentSerializer(serializers.ModelSerializer):
@@ -31,19 +30,6 @@ class RiskPredictionSerializer(serializers.ModelSerializer):
             "explanation",
             "created_at",
         ]
-
-
-class PredictRequestSerializer(serializers.Serializer):
-    """Validates the body of POST /api/predict/.
-
-    Every feature is optional (service.to_feature_row supplies defaults),
-    but each must be numeric when present.
-    """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for col in FEATURE_COLUMNS:
-            self.fields[col] = serializers.FloatField(required=False)
 
 
 class GradePredictRequestSerializer(serializers.Serializer):
