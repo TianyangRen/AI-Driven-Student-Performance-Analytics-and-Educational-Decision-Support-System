@@ -1,4 +1,7 @@
-"""Mock analytics endpoints — return synthesized demo data so frontend prototypes render."""
+"""Mock analytics endpoints — return synthesized demo data so frontend prototypes render.
+
+Exception: dashboard_summary() below is REAL —— it queries the DB, not mock.
+"""
 import random
 from datetime import datetime, timezone
 
@@ -6,6 +9,81 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 
 from common.responses import ok
+
+
+# ------------------------------------------------------------------ #
+# 真实数据接口：工作台汇总（不是 mock）
+# ------------------------------------------------------------------ #
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def dashboard_summary(request):
+    """
+    GET /api/v1/dashboard/summary —— 工作台顶部统计卡 + 教学班快捷入口。
+
+    数据按权限过滤：ADMIN / 超级用户看全部，普通教师只看自己名下。
+    """
+    from django.db.models import Count, Q
+    from apps.courses.models import Course, CourseSection, Enrollment
+    from apps.predictions.models import RiskPrediction
+    from apps.reports_app.models import ReportExport
+
+    user = request.user
+    if user.is_admin:
+        courses = Course.objects.all()
+        sections = CourseSection.objects.select_related("course").all()
+        reports = ReportExport.objects.all()
+    else:
+        courses = Course.objects.filter(owner=user)
+        sections = CourseSection.objects.select_related("course").filter(instructor=user)
+        reports = ReportExport.objects.filter(requested_by=user)
+
+    section_ids = list(sections.values_list("id", flat=True))
+
+    student_count = (
+        Enrollment.objects.filter(section_id__in=section_ids)
+        .values("student").distinct().count()
+    )
+    high_risk_count = (
+        RiskPrediction.objects.filter(run__section_id__in=section_ids, risk_level="HIGH")
+        .values("student").distinct().count()
+    )
+    pending_reports = reports.filter(status__in=["PENDING", "PROCESSING"]).count()
+
+    # 每个教学班的学生数 / 高风险数，供快捷入口列表展示
+    per_section_students = {
+        row["section_id"]: row["n"]
+        for row in Enrollment.objects.filter(section_id__in=section_ids)
+        .values("section_id").annotate(n=Count("student", distinct=True))
+    }
+    per_section_risk = {
+        row["run__section_id"]: row["n"]
+        for row in RiskPrediction.objects.filter(run__section_id__in=section_ids, risk_level="HIGH")
+        .values("run__section_id").annotate(n=Count("student", distinct=True))
+    }
+
+    section_list = [
+        {
+            "id": s.id,
+            "course_code": s.course.code,
+            "course_name": s.course.name,
+            "section_code": s.section_code,
+            "term": s.course.term,
+            "student_count": per_section_students.get(s.id, 0),
+            "high_risk_count": per_section_risk.get(s.id, 0),
+        }
+        for s in sections.order_by("course__code", "section_code")
+    ]
+
+    return ok({
+        "kpis": {
+            "course_count": courses.count(),
+            "section_count": len(section_ids),
+            "student_count": student_count,
+            "high_risk_count": high_risk_count,
+            "pending_report_count": pending_reports,
+        },
+        "sections": section_list,
+    })
 
 
 def _demo_overview(section_id):

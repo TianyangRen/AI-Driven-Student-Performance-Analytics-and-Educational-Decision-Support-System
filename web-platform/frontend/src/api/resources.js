@@ -8,6 +8,9 @@ export const createCourse = (payload) => client.post('/courses', payload).then(u
 export const listSections = () => client.get('/sections').then(unwrap);
 export const createSection = (payload) => client.post('/sections', payload).then(unwrap);
 
+/* Dashboard (real DB-backed summary) */
+export const getDashboardSummary = () => client.get('/dashboard/summary').then(unwrap);
+
 /* Class analytics */
 export const getOverview = (sectionId) =>
   client.get(`/sections/${sectionId}/overview`).then(unwrap);

@@ -3,10 +3,12 @@
 COMP8567 · Team 7 · V1.1 原型骨架。
 
 本仓库基于《项目需求分析文档》《系统开发技术文档（V1.1）》搭建：
+
 - **backend/** — Django 5 + DRF + SQLite（默认）/ PostgreSQL（可选）
 - **frontend/** — Vite + React + Ant Design + ECharts
 
 当前阶段已完成的内容：
+
 - 完整后端分层骨架（accounts / courses / imports / analytics / predictions / reports / audit 7 个 app）
 - 数据库模型按技术文档 §4 设计落库（含 V1.1 修订：`model_version` 部分唯一索引、`prediction_run` 并发约束、`audit_log` 时间字段、`report_export.expires_at`）
 - **可用功能**：用户注册 / 登录 / 登出 / 获取当前用户、课程与教学班 CRUD、文件上传创建导入批次、报告生成与下载

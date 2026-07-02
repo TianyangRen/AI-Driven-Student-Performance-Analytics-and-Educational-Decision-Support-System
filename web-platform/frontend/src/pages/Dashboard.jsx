@@ -20,7 +20,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const [courses, setCourses] = useState([]);
+  const [summary, setSummary] = useState(null);
   const [sections, setSections] = useState([]);
   const [sectionId, setSectionId] = useState(null);
   const [overview, setOverview] = useState(null);
@@ -29,13 +29,13 @@ export default function Dashboard() {
   const [panelLoading, setPanelLoading] = useState(false);
 
   useEffect(() => {
-    Promise.all([api.listCourses(), api.listSections()])
-      .then(([c, s]) => {
-        setCourses(c || []);
+    Promise.all([api.getDashboardSummary(), api.listSections()])
+      .then(([sum, s]) => {
+        setSummary(sum || null);
         setSections(s || []);
         if (s && s.length) setSectionId(s[0].id);
       })
-      .catch(() => message.error('Failed to load course data'))
+      .catch(() => message.error('Failed to load dashboard'))
       .finally(() => setBootLoading(false));
   }, []);
 
@@ -75,7 +75,6 @@ export default function Dashboard() {
     );
   }
 
-  const kpis = overview?.kpis;
   const risk = overview?.risk_summary;
 
   return (
@@ -103,26 +102,26 @@ export default function Dashboard() {
         }
       />
 
-      {/* KPI row */}
+      {/* KPI row — real DB-backed counts from /dashboard/summary */}
       <Row gutter={[16, 16]}>
         <Col xs={12} md={12} lg={6}>
-          <KpiCard label="My courses" value={courses.length} icon={<BookOutlined />} color={palette.cyan} />
+          <KpiCard label="My courses" value={summary?.kpis?.course_count ?? '—'} icon={<BookOutlined />} color={palette.cyan} />
         </Col>
         <Col xs={12} md={12} lg={6}>
-          <KpiCard label="Sections" value={sections.length} icon={<ApartmentOutlined />} color={palette.violet} />
+          <KpiCard label="Sections" value={summary?.kpis?.section_count ?? '—'} icon={<ApartmentOutlined />} color={palette.violet} />
         </Col>
         <Col xs={12} md={12} lg={6}>
           <KpiCard
-            label="Students in section"
-            value={kpis?.student_count ?? '—'}
+            label="Students"
+            value={summary?.kpis?.student_count ?? '—'}
             icon={<TeamOutlined />}
             color={palette.teal}
           />
         </Col>
         <Col xs={12} md={12} lg={6}>
           <KpiCard
-            label="High-risk alerts"
-            value={risk?.high ?? '—'}
+            label="High-risk students"
+            value={summary?.kpis?.high_risk_count ?? '—'}
             icon={<AlertOutlined />}
             color={palette.riskHigh}
             hint="Needs attention"
