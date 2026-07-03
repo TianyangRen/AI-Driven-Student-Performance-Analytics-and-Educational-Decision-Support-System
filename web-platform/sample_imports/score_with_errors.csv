@@ -1,0 +1,7 @@
+student_no,assessment_name,assessment_type,max_score,weight,week_no,score
+S-001,Quiz 2,QUIZ,50,5,3,44
+S-002,Quiz 2,QUIZ,50,5,3,abc
+S-003,Quiz 2,QUIZ,50,5,3,60
+S-999,Quiz 2,QUIZ,50,5,3,30
+S-004,Quiz 2,BADTYPE,50,5,3,40
+S-005,Quiz 2,QUIZ,50,5,3,

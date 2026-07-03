@@ -49,7 +49,7 @@ what determines pass/fail.
 ## Project layout
 
 ```
-backend/
+ml-service/
 ├── manage.py
 ├── requirements.txt
 ├── config/                 # Django project (settings, urls, wsgi)
@@ -88,10 +88,10 @@ backend/
 .\.venv\Scripts\Activate.ps1
 
 # 2. Install dependencies
-pip install -r backend\requirements.txt
+pip install -r ml-service\requirements.txt
 
 # 3. Database
-cd backend
+cd ml-service
 python manage.py migrate
 python manage.py createsuperuser   # optional, for /admin
 
@@ -116,7 +116,7 @@ API: its features are VLE clickstream, which local gradebooks don't have. It
 remains the validation testbed (ROC-AUC ≈ 0.82; normalization reproduction on
 22 real divergent cohorts). Trained on the **Open University Learning
 Analytics Dataset** (~32k students, CC BY 4.0). `analytics/ml/oulad.py`
-downloads the 7 CSVs into `backend/data/oulad/` and engineers EARLY-WINDOW
+downloads the 7 CSVs into `ml-service/data/oulad/` and engineers EARLY-WINDOW
 features (first 28 days only, to avoid leakage):
 
 | Feature | Meaning |

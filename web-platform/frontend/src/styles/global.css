@@ -1,0 +1,272 @@
+:root {
+  --cockpit-bg-deep: #070d20;
+  --cockpit-border: rgba(94, 124, 196, 0.22);
+  --cockpit-text: #e8f0ff;
+  --cockpit-text-secondary: #93a7d1;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: 'Inter', 'HarmonyOS Sans SC', 'PingFang SC', -apple-system, BlinkMacSystemFont,
+    'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  color: var(--cockpit-text);
+  background-color: var(--cockpit-bg-deep);
+  background-image:
+    radial-gradient(1100px 700px at 8% -10%, rgba(56, 189, 248, 0.14), transparent 60%),
+    radial-gradient(1000px 800px at 100% 0%, rgba(129, 140, 248, 0.14), transparent 55%),
+    radial-gradient(900px 700px at 50% 120%, rgba(34, 211, 238, 0.08), transparent 60%),
+    linear-gradient(180deg, #070d20 0%, #060a18 100%);
+  background-attachment: fixed;
+}
+
+/* ---------- Glassmorphism panel ---------- */
+.cockpit-panel {
+  position: relative;
+  background: linear-gradient(160deg, rgba(24, 38, 78, 0.72), rgba(13, 22, 52, 0.62));
+  border: 1px solid var(--cockpit-border);
+  border-radius: 16px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 18px 40px -22px rgba(2, 8, 28, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.cockpit-panel--hover:hover {
+  transform: translateY(-3px);
+  border-color: rgba(56, 189, 248, 0.45);
+  box-shadow: 0 26px 50px -22px rgba(2, 8, 28, 0.95), 0 0 0 1px rgba(56, 189, 248, 0.15);
+}
+
+/* Top highlight stroke of the panel */
+.cockpit-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.5), transparent);
+  opacity: 0.6;
+}
+
+/* ---------- KPI card ---------- */
+.kpi-card {
+  position: relative;
+  overflow: hidden;
+  padding: 20px 22px;
+  min-height: 132px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.kpi-card__glow {
+  position: absolute;
+  right: -30px;
+  top: -30px;
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  filter: blur(8px);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.kpi-card__label {
+  color: var(--cockpit-text-secondary);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+
+.kpi-card__value {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  font-size: 20px;
+}
+
+/* ---------- Page header ---------- */
+.page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.page-header__title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  background: linear-gradient(90deg, #ffffff, #9ec5ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.page-header__subtitle {
+  color: var(--cockpit-text-secondary);
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.page-header__accent {
+  display: inline-block;
+  width: 4px;
+  height: 22px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #38bdf8, #818cf8);
+  margin-right: 12px;
+  vertical-align: -3px;
+}
+
+/* ---------- Sidebar brand ---------- */
+.cockpit-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 22px 20px 18px;
+}
+
+.cockpit-brand__logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: #fff;
+  background: linear-gradient(135deg, #38bdf8, #6366f1);
+  box-shadow: 0 8px 20px -6px rgba(56, 189, 248, 0.6);
+}
+
+.cockpit-brand__title {
+  font-weight: 700;
+  font-size: 15px;
+  color: #fff;
+  line-height: 1.2;
+}
+
+.cockpit-brand__subtitle {
+  font-size: 11px;
+  color: var(--cockpit-text-secondary);
+  letter-spacing: 0.08em;
+}
+
+/* ---------- Login / register background ---------- */
+.auth-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-grid {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(rgba(94, 124, 196, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(94, 124, 196, 0.06) 1px, transparent 1px);
+  background-size: 46px 46px;
+  mask-image: radial-gradient(circle at 50% 40%, black, transparent 75%);
+  pointer-events: none;
+}
+
+/* ---------- Scrollbar ---------- */
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(94, 124, 196, 0.35);
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(94, 124, 196, 0.55);
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ---------- Transparent tables ---------- */
+.cockpit-table .ant-table {
+  background: transparent;
+}
+.cockpit-table .ant-table-cell {
+  border-color: var(--cockpit-border) !important;
+}
+
+/* ---------- Animations ---------- */
+@keyframes cockpit-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-up {
+  animation: cockpit-fade-up 0.5s ease both;
+}
+
+@keyframes cockpit-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.live-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.18);
+  animation: cockpit-pulse 1.8s ease-in-out infinite;
+}
+
+/* Responsive: tighten content padding on small screens */
+@media (max-width: 768px) {
+  .page-header__title {
+    font-size: 18px;
+  }
+  .kpi-card__value {
+    font-size: 26px;
+  }
+  .auth-hero {
+    display: none !important;
+  }
+}
