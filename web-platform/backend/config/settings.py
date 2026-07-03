@@ -121,5 +121,11 @@ MODEL_ARTIFACT_DIR = env("MODEL_ARTIFACT_DIR", default=str(BASE_DIR / "data" / "
 REPORT_OUTPUT_DIR = env("REPORT_OUTPUT_DIR", default=str(BASE_DIR / "data" / "reports"))
 MAX_UPLOAD_SIZE_MB = env.int("MAX_UPLOAD_SIZE_MB", default=20)
 
+# --- ML 服务（组员的 backend/，独立跑在 :8000）------------------------- #
+# web-platform 后端通过 HTTP 调用它的分析/预测接口，见 common/ml_gateway.py。
+# 服务器到服务器调用，无鉴权、不受 CORS 约束。
+ML_API_BASE_URL = env("ML_API_BASE_URL", default="http://127.0.0.1:8000")
+ML_API_TIMEOUT = env.float("ML_API_TIMEOUT", default=5.0)
+
 os.makedirs(MODEL_ARTIFACT_DIR, exist_ok=True)
 os.makedirs(REPORT_OUTPUT_DIR, exist_ok=True)
