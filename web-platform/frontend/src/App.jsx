@@ -11,6 +11,7 @@ import ClassOverview from './pages/ClassOverview.jsx';
 import StudentDetail from './pages/StudentDetail.jsx';
 import Predictions from './pages/Predictions.jsx';
 import Comparisons from './pages/Comparisons.jsx';
+import CohortInsights from './pages/CohortInsights.jsx';
 import Reports from './pages/Reports.jsx';
 import Profile from './pages/Profile.jsx';
 
@@ -36,6 +37,7 @@ export default function App() {
         <Route path="sections/:sectionId/students/:studentId" element={<StudentDetail />} />
         <Route path="sections/:sectionId/predictions" element={<Predictions />} />
         <Route path="comparisons" element={<Comparisons />} />
+        <Route path="cohort-insights" element={<CohortInsights />} />
         <Route path="reports" element={<Reports />} />
         <Route path="profile" element={<Profile />} />
       </Route>

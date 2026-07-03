@@ -29,16 +29,23 @@ export default function StudentDetail() {
 
   useEffect(() => {
     setLoading(true);
+    setExplanation(null);
     api
       .getStudentProfile(sectionId, studentId)
-      .then((p) => setProfile(p))
+      .then((p) => {
+        setProfile(p);
+        // SHAP explanation exists only after a prediction run has produced a real
+        // prediction_id for this student; skip gracefully otherwise.
+        const predictionId = p?.risk?.prediction_id;
+        if (predictionId) {
+          api
+            .getExplanation(predictionId)
+            .then((e) => setExplanation(e))
+            .catch(() => {});
+        }
+      })
       .catch(() => message.error('Failed to load student profile'))
       .finally(() => setLoading(false));
-    // Prediction explanation: mock backend keys it by 90000 + studentId
-    api
-      .getExplanation(90000 + parseInt(studentId, 10))
-      .then((e) => setExplanation(e))
-      .catch(() => {});
   }, [sectionId, studentId]);
 
   if (loading || !profile) {

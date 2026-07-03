@@ -175,6 +175,74 @@ export function buildContribBar({ items }) {
   };
 }
 
+/** Matrix heatmap (groups × categories) —— 适合密集二维对比，避免柱状图挤成一团。
+ *  色阶默认固定 50–100（绝对分数档位），近似的值看起来就该近似；
+ *  传 min/max 覆盖，或传 null 让色阶自适应数据范围。 */
+export function buildHeatmap({ categories, series, min = 50, max = 100 }) {
+  const yLabels = series.map((s) => s.name);
+  const data = [];
+  let dataMin = Infinity;
+  let dataMax = -Infinity;
+  series.forEach((s, y) =>
+    (s.data || []).forEach((v, x) => {
+      data.push([x, y, v]);
+      if (v < dataMin) dataMin = v;
+      if (v > dataMax) dataMax = v;
+    })
+  );
+  if (!Number.isFinite(dataMin)) {
+    dataMin = 0;
+    dataMax = 100;
+  }
+  const vmMin = min == null ? Math.floor(dataMin) : min;
+  const vmMax = max == null ? Math.ceil(dataMax) : max;
+  const manyCols = categories.length > 6;
+  return {
+    tooltip: {
+      ...baseTooltip,
+      position: 'top',
+      formatter: (p) =>
+        `${yLabels[p.value[1]]} · ${categories[p.value[0]]}<br/><b>${p.value[2]}</b>`,
+    },
+    grid: { left: 8, right: 16, top: 10, bottom: 56, containLabel: true },
+    xAxis: {
+      type: 'category',
+      data: categories,
+      ...axisCommon,
+      axisLabel: { ...axisCommon.axisLabel, rotate: manyCols ? 32 : 0, interval: 0 },
+    },
+    yAxis: { type: 'category', data: yLabels, ...axisCommon, splitLine: { show: false } },
+    visualMap: {
+      min: vmMin,
+      max: vmMax,
+      calculable: true,
+      orient: 'horizontal',
+      left: 'center',
+      bottom: 0,
+      itemWidth: 12,
+      itemHeight: 120,
+      textStyle: { color: palette.textSecondary, fontSize: 11 },
+      inRange: { color: [palette.riskHigh, palette.gold, palette.teal] },
+    },
+    series: [
+      {
+        type: 'heatmap',
+        data,
+        label: {
+          show: true,
+          color: '#fff',
+          fontSize: 10,
+          textBorderColor: 'rgba(0,0,0,0.55)',
+          textBorderWidth: 2,
+          formatter: (p) => p.value[2],
+        },
+        itemStyle: { borderColor: 'rgba(7,13,32,0.65)', borderWidth: 2, borderRadius: 4 },
+        emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.5)' } },
+      },
+    ],
+  };
+}
+
 /** Multi-series grouped bar chart */
 export function buildGroupedBar({ categories, series }) {
   return {

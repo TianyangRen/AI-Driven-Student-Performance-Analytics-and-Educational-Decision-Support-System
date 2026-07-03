@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button, Select, Empty, message } from 'antd';
 import { BarChartOutlined, SwapOutlined } from '@ant-design/icons';
 import { PageHeader, Panel, ChartCard } from '../components/ui';
-import { buildGroupedBar } from '../theme/echarts';
+import { buildHeatmap } from '../theme/echarts';
 import { palette } from '../theme/tokens';
 import * as api from '../api/resources';
 
@@ -49,10 +49,10 @@ export default function Comparisons() {
         <ChartCard
           title="Comparison result"
           icon={<BarChartOutlined />}
-          subtitle={`Dimension: ${DIMENSIONS.find((d) => d.value === dimension)?.label}`}
-          height={420}
+          subtitle={`Dimension: ${DIMENSIONS.find((d) => d.value === dimension)?.label} · cell = average score (%)`}
+          height={Math.min(760, Math.max(340, (result.series?.length || 1) * 34 + 150))}
           loading={loading}
-          option={buildGroupedBar({ categories: result.labels, series: result.series })}
+          option={buildHeatmap({ categories: result.labels, series: result.series })}
         />
       ) : (
         <Panel bodyStyle={{ padding: 60 }}>

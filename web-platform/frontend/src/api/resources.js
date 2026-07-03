@@ -31,10 +31,18 @@ export const listPredictions = (sectionId) =>
 export const getExplanation = (predictionId) =>
   client.get(`/predictions/${predictionId}/explanation`).then(unwrap);
 
+/* Cohort insights —— 透传 ML 服务对固定研究数据集的分析（结课复盘 / 预警 / 测评质量） */
+export const getCohortProfile = () => client.get('/analytics/cohort-profile').then(unwrap);
+export const getWarningTimeline = () => client.get('/analytics/warning-timeline').then(unwrap);
+export const getAssessmentQuality = () => client.get('/analytics/assessment-quality').then(unwrap);
+
 /* Comparisons / reports / imports */
 export const runComparison = (payload) =>
   client.post('/analytics/comparisons', payload).then(unwrap);
 export const createReport = (payload) => client.post('/reports', payload).then(unwrap);
+// 下载走带鉴权的 axios（window.open 不会带 Token 头，会 401）
+export const downloadReport = (id) =>
+  client.get(`/reports/${id}/download`, { responseType: 'blob' });
 export const createImport = (sectionId, formData) =>
   client
     .post(`/sections/${sectionId}/imports`, formData, {

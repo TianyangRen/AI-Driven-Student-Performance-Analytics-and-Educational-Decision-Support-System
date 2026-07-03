@@ -5,6 +5,7 @@ import {
   BookOutlined,
   ApartmentOutlined,
   BarChartOutlined,
+  ClusterOutlined,
   FileTextOutlined,
   UserOutlined,
   LogoutOutlined,
@@ -24,6 +25,7 @@ const menuItems = [
   { key: '/courses', icon: <BookOutlined />, label: 'Courses' },
   { key: '/sections', icon: <ApartmentOutlined />, label: 'Sections' },
   { key: '/comparisons', icon: <BarChartOutlined />, label: 'Comparisons' },
+  { key: '/cohort-insights', icon: <ClusterOutlined />, label: 'Cohort Insights' },
   { key: '/reports', icon: <FileTextOutlined />, label: 'Reports' },
 ];
 
