@@ -21,7 +21,7 @@ Metrics (pooled over all held-out students):
     baseline. (Caveat: only 2 students sit below 60, so that threshold is
     reported for completeness, not for strong conclusions.)
 
-    cd backend
+    cd ml-service
     python -m analytics.ml.evaluate_probabilistic
 """
 from __future__ import annotations

@@ -9,14 +9,14 @@ env/
 # Django
 *.sqlite3
 db.sqlite3
-/backend/staticfiles/
+/ml-service/staticfiles/
 *.log
 
 # ML artifacts (regenerate with analytics/ml/train.py)
-/backend/ml_models/*.pkl
+/ml-service/ml_models/*.pkl
 
 # OULAD dataset (large; download with `python -m analytics.ml.oulad`)
-/backend/data/
+/ml-service/data/
 
 # IDE / OS
 .vscode/

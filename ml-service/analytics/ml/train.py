@@ -3,7 +3,7 @@
 Run this OUTSIDE the web request cycle to produce the .pkl artifact that
 MLService loads at startup.
 
-    cd backend
+    cd ml-service
     python -m analytics.ml.train                 # train on OULAD (downloads if needed)
     python -m analytics.ml.train --csv data.csv  # train on your own CSV instead
 

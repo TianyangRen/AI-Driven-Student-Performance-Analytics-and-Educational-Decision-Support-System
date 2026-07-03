@@ -17,7 +17,7 @@ Two experiments:
         the controlled experiment that shows whether cohort normalization
         improves cross-semester transfer.
 
-    cd backend
+    cd ml-service
     python -m analytics.ml.train_real
 """
 from __future__ import annotations

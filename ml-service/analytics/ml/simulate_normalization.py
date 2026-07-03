@@ -25,7 +25,7 @@ Two conditions:
     SIMILAR    beta = 0 for all (the real data as-is)
     DIVERGENT  beta differs per semester (simulated difficulty gap)
 
-    cd backend
+    cd ml-service
     python -m analytics.ml.simulate_normalization
 """
 from __future__ import annotations

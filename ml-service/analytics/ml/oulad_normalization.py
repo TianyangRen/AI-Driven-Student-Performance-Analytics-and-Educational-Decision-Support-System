@@ -19,7 +19,7 @@ Design (parallel to the local experiment):
   NORM track  = within-cohort percentile of the same early features
   validation  = leave-cohorts-out (GroupKFold by cohort)
 
-    cd backend
+    cd ml-service
     python -m analytics.ml.oulad_normalization
 """
 from __future__ import annotations

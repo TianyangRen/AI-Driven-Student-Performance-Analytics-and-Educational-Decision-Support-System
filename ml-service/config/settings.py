@@ -6,7 +6,7 @@ with a commented PostgreSQL block for when you switch to the real DB.
 """
 from pathlib import Path
 
-# backend/   (manage.py lives here)
+# ml-service/   (manage.py lives here)
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # --- Security (dev defaults; do NOT use this key in production) -------------

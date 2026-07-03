@@ -37,7 +37,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-# real_data/ lives at the repo root (sibling of backend/)
+# real_data/ lives at the repo root (sibling of ml-service/)
 REAL_DATA_DIR = Path(__file__).resolve().parents[3] / "real_data"
 OUT_DIR = Path(__file__).resolve().parents[2] / "data" / "real"
 
