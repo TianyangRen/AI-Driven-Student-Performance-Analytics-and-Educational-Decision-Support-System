@@ -10,4 +10,8 @@ urlpatterns = [
     path("sections/<int:section_id>/students/<int:student_id>/profile", views.student_profile),
     path("sections/<int:section_id>/students/<int:student_id>/indicators", views.student_indicators),
     path("analytics/comparisons", views.comparisons),
+    # 透传组员 ML 服务(:8000) 的分析看板
+    path("analytics/cohort-profile", views.cohort_profile),
+    path("analytics/warning-timeline", views.warning_timeline),
+    path("analytics/assessment-quality", views.assessment_quality),
 ]
