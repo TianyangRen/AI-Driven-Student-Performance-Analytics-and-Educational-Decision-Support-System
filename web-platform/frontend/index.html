@@ -4,6 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI Student Performance Analytics</title>
+    <script>
+      // Apply saved theme/lang before paint to avoid a flash of the wrong theme.
+      (function () {
+        try {
+          var m = localStorage.getItem('pref_theme_mode');
+          document.documentElement.setAttribute('data-theme', m === 'light' ? 'light' : 'dark');
+          var l = localStorage.getItem('pref_lang');
+          if (l === 'zh' || l === 'en') document.documentElement.setAttribute('lang', l === 'zh' ? 'zh-CN' : 'en');
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

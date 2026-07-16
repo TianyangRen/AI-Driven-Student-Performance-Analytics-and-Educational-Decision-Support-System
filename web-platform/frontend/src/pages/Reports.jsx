@@ -126,7 +126,7 @@ export default function Reports() {
             {
               title: 'Type',
               dataIndex: 'report_type',
-              render: (v) => <span style={{ color: '#fff' }}>{TYPE_LABEL[v] || v}</span>,
+              render: (v) => <span style={{ color: palette.textStrong }}>{TYPE_LABEL[v] || v}</span>,
             },
             {
               title: 'Status',

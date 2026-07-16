@@ -83,7 +83,7 @@ function CohortProfileBody({ d }) {
   const cs = d.class_stats || {};
   const memberCols = [
     { title: 'Student', dataIndex: 'id', render: (v, r) => (
-      <span style={{ color: '#fff' }}>{v} <span style={{ color: palette.textMuted, fontSize: 11 }}>({stripOffering(r.offering)})</span></span>
+      <span style={{ color: palette.textStrong }}>{v} <span style={{ color: palette.textMuted, fontSize: 11 }}>({stripOffering(r.offering)})</span></span>
     ) },
     { title: 'Pctl', dataIndex: 'pctl', width: 70, render: (v) => (v ?? '--') },
     { title: 'Proj.', dataIndex: 'projected', width: 70 },
@@ -111,7 +111,7 @@ function CohortProfileBody({ d }) {
           {(d.weakness_boards || []).map((b) => (
             <Col xs={24} lg={12} xxl={6} key={b.dim}>
               <div style={{ marginBottom: 8 }}>
-                <span style={{ color: '#fff', fontWeight: 600 }}>{b.dim}</span>
+                <span style={{ color: palette.textStrong, fontWeight: 600 }}>{b.dim}</span>
                 <span style={{ color: palette.textSecondary, fontSize: 12, marginLeft: 8 }}>
                   {b.n} students · {b.share_pct}%
                 </span>
@@ -133,7 +133,7 @@ function CohortProfileBody({ d }) {
           dataSource={d.disengagement?.members || []}
           size="middle" pagination={{ pageSize: 8 }}
           columns={[
-            { title: 'Student', dataIndex: 'id', render: (v, r) => <span style={{ color: '#fff' }}>{v} <span style={{ color: palette.textMuted, fontSize: 11 }}>({stripOffering(r.offering)})</span></span> },
+            { title: 'Student', dataIndex: 'id', render: (v, r) => <span style={{ color: palette.textStrong }}>{v} <span style={{ color: palette.textMuted, fontSize: 11 }}>({stripOffering(r.offering)})</span></span> },
             { title: 'Tag', dataIndex: 'tag', render: (v) => <Tag color={v === 'disengaged' ? 'red' : 'gold'}>{v}</Tag> },
             { title: 'Missed (total/late)', render: (_, r) => `${r.missed_total} / ${r.missed_late}` },
             { title: 'Projected', dataIndex: 'projected' },
@@ -204,7 +204,7 @@ function WarningTimelineBody({ d }) {
           className="cockpit-table" rowKey={(r) => `${r.id}-${r.offering}`}
           dataSource={d.declining || []} size="middle" pagination={{ pageSize: 8 }}
           columns={[
-            { title: 'Student', dataIndex: 'id', render: (v, r) => <span style={{ color: '#fff' }}>{v} <span style={{ color: palette.textMuted, fontSize: 11 }}>({stripOffering(r.offering)})</span></span> },
+            { title: 'Student', dataIndex: 'id', render: (v, r) => <span style={{ color: palette.textStrong }}>{v} <span style={{ color: palette.textMuted, fontSize: 11 }}>({stripOffering(r.offering)})</span></span> },
             { title: 'W3', render: (_, r) => r.preds?.W3 ?? '--' },
             { title: 'W6', render: (_, r) => r.preds?.W6 ?? '--' },
             { title: 'W9', render: (_, r) => r.preds?.W9 ?? '--' },
@@ -257,7 +257,7 @@ function AssessmentQualityBody({ d }) {
               className="cockpit-table" rowKey="category"
               dataSource={d.category_summary || []} size="middle" pagination={false}
               columns={[
-                { title: 'Category', dataIndex: 'category', render: (v) => <span style={{ color: '#fff', textTransform: 'capitalize' }}>{v}</span> },
+                { title: 'Category', dataIndex: 'category', render: (v) => <span style={{ color: palette.textStrong, textTransform: 'capitalize' }}>{v}</span> },
                 { title: 'Avg discrimination (r)', dataIndex: 'avg_discrimination_r', render: (v) => (v ?? '--') },
                 { title: 'Avg ceiling (%)', dataIndex: 'avg_ceiling_pct', render: (v) => (v ?? '--') },
               ]}
@@ -271,7 +271,7 @@ function AssessmentQualityBody({ d }) {
           className="cockpit-table" rowKey="label"
           dataSource={d.components || []} size="middle" pagination={{ pageSize: 12 }}
           columns={[
-            { title: 'Component', dataIndex: 'label', render: (v) => <span style={{ color: '#fff' }}>{v}</span> },
+            { title: 'Component', dataIndex: 'label', render: (v) => <span style={{ color: palette.textStrong }}>{v}</span> },
             { title: 'Category', dataIndex: 'category', render: (v) => <span style={{ color: palette.textSecondary, textTransform: 'capitalize' }}>{v}</span> },
             { title: 'Difficulty (%)', dataIndex: 'difficulty_pct', sorter: (a, b) => a.difficulty_pct - b.difficulty_pct },
             { title: 'Discrimination (r)', dataIndex: 'discrimination_r', sorter: (a, b) => (a.discrimination_r ?? -9) - (b.discrimination_r ?? -9), render: (v) => (v == null ? '--' : v) },

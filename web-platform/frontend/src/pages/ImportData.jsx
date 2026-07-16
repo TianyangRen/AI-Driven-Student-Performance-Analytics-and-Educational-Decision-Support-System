@@ -101,7 +101,7 @@ export default function ImportData() {
               <p style={{ fontSize: 44, color: palette.cyan, margin: '8px 0' }}>
                 <InboxOutlined />
               </p>
-              <p style={{ color: '#fff', fontSize: 15 }}>Click or drag a file to this area to upload</p>
+              <p style={{ color: palette.textStrong, fontSize: 15 }}>Click or drag a file to this area to upload</p>
               <p style={{ color: palette.textMuted, fontSize: 12 }}>CSV / Excel · up to 20MB per file</p>
             </Upload.Dragger>
           </Panel>

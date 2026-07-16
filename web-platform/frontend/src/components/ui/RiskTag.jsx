@@ -1,10 +1,13 @@
 import { RISK_META } from '../../theme/tokens';
+import { useI18n } from '../../contexts/PreferencesContext.jsx';
 
 /**
  * RiskTag — risk-level pill (HIGH / MEDIUM / LOW) with semantic color and glow.
  */
 export default function RiskTag({ level, size = 'default' }) {
-  const meta = RISK_META[level] || RISK_META.LOW;
+  const { t } = useI18n();
+  const key = RISK_META[level] ? level : 'LOW';
+  const meta = RISK_META[key];
   const pad = size === 'small' ? '1px 9px' : '3px 12px';
   const fontSize = size === 'small' ? 11 : 12;
   return (
@@ -33,7 +36,7 @@ export default function RiskTag({ level, size = 'default' }) {
           boxShadow: `0 0 8px ${meta.glow}`,
         }}
       />
-      {meta.label}
+      {t(`risk.${key}`)}
     </span>
   );
 }

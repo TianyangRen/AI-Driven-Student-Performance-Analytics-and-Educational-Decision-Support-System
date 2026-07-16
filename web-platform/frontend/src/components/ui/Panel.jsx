@@ -1,3 +1,5 @@
+import { palette } from '../../theme/tokens';
+
 /**
  * Panel — cockpit glassmorphism container.
  * Replaces antd Card as the unified content panel: optional title,
@@ -27,17 +29,17 @@ export default function Panel({
             justifyContent: 'space-between',
             gap: 12,
             padding: '16px 20px',
-            borderBottom: '1px solid rgba(94,124,196,0.16)',
+            borderBottom: '1px solid var(--cockpit-border-soft)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
             {icon && (
-              <span style={{ color: '#38bdf8', fontSize: 18, display: 'inline-flex' }}>{icon}</span>
+              <span style={{ color: palette.primary, fontSize: 18, display: 'inline-flex' }}>{icon}</span>
             )}
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontWeight: 600, fontSize: 15, color: '#e8f0ff' }}>{title}</div>
+              <div style={{ fontWeight: 600, fontSize: 15, color: palette.textPrimary }}>{title}</div>
               {subtitle && (
-                <div style={{ fontSize: 12, color: '#93a7d1', marginTop: 2 }}>{subtitle}</div>
+                <div style={{ fontSize: 12, color: palette.textSecondary, marginTop: 2 }}>{subtitle}</div>
               )}
             </div>
           </div>

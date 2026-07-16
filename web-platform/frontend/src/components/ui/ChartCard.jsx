@@ -1,5 +1,6 @@
 import ReactECharts from 'echarts-for-react';
 import Panel from './Panel';
+import { palette } from '../../theme/tokens';
 
 /**
  * ChartCard — renders an ECharts chart inside a glass panel.
@@ -23,9 +24,9 @@ export default function ChartCard({
         showLoading={loading}
         loadingOption={{
           text: 'Loading',
-          color: '#38bdf8',
-          textColor: '#93a7d1',
-          maskColor: 'rgba(7,13,32,0.3)',
+          color: palette.primary,
+          textColor: palette.textSecondary,
+          maskColor: `${palette.bgDeep}55`,
         }}
         style={{ height }}
         opts={{ renderer: 'canvas' }}

@@ -2,30 +2,27 @@ import { Form, Input, Button, Typography, message } from 'antd';
 import { UserOutlined, LockOutlined, ExperimentOutlined, ArrowRightOutlined } from '@ant-design/icons';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.jsx';
+import { useI18n } from '../contexts/PreferencesContext.jsx';
 import { useState } from 'react';
 import { palette } from '../theme/tokens';
 
-const features = [
-  'Class overview · multi-dimensional snapshots',
-  'AI risk prediction · SHAP explainability',
-  'Trend / distribution / cohort comparison',
-];
-
 export default function Login() {
   const { login } = useAuth();
+  const { t } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
   const [loading, setLoading] = useState(false);
+  const features = [t('auth.feature1'), t('auth.feature2'), t('auth.feature3')];
 
   const onFinish = async (values) => {
     setLoading(true);
     try {
       await login(values.username, values.password);
-      message.success('Signed in');
+      message.success(t('auth.signedIn'));
       const target = location.state?.from?.pathname || '/dashboard';
       navigate(target, { replace: true });
     } catch (e) {
-      message.error(e.response?.data?.error?.message || e.message || 'Login failed');
+      message.error(e.response?.data?.error?.message || e.message || t('auth.loginFailed'));
     } finally {
       setLoading(false);
     }
@@ -61,12 +58,11 @@ export default function Login() {
             <div className="cockpit-brand__logo" style={{ width: 48, height: 48, fontSize: 24 }}>
               <ExperimentOutlined />
             </div>
-            <h2 style={{ color: '#fff', fontSize: 24, margin: '22px 0 8px', fontWeight: 700 }}>
-              Student Performance Analytics<br />& Decision Support
+            <h2 style={{ color: palette.textStrong, fontSize: 24, margin: '22px 0 8px', fontWeight: 700 }}>
+              {t('auth.appName')}
             </h2>
             <p style={{ color: palette.textSecondary, fontSize: 13, lineHeight: 1.7 }}>
-              Turn quizzes, assignments, attendance and learning activity into clear, traceable
-              and actionable teaching insights.
+              {t('auth.intro')}
             </p>
           </div>
           <div style={{ marginTop: 28 }}>
@@ -93,37 +89,37 @@ export default function Login() {
 
         {/* Right form */}
         <div style={{ width: 380, maxWidth: '100%', padding: '44px 36px' }}>
-          <Typography.Title level={4} style={{ color: '#fff', marginTop: 0 }}>
-            Welcome back 👋
+          <Typography.Title level={4} style={{ color: palette.textStrong, marginTop: 0 }}>
+            {t('auth.welcomeBack')}
           </Typography.Title>
           <Typography.Text style={{ color: palette.textSecondary }}>
-            Sign in to enter the cockpit
+            {t('auth.signInHint')}
           </Typography.Text>
           <Form layout="vertical" onFinish={onFinish} style={{ marginTop: 24 }} size="large">
             <Form.Item
               name="username"
-              label="Username"
-              rules={[{ required: true, message: 'Please enter your username' }]}
+              label={t('auth.username')}
+              rules={[{ required: true, message: t('auth.usernameRequired') }]}
             >
               <Input prefix={<UserOutlined style={{ color: palette.textMuted }} />} placeholder="instructor01" autoFocus />
             </Form.Item>
             <Form.Item
               name="password"
-              label="Password"
-              rules={[{ required: true, message: 'Please enter your password' }]}
+              label={t('auth.password')}
+              rules={[{ required: true, message: t('auth.passwordRequired') }]}
             >
               <Input.Password prefix={<LockOutlined style={{ color: palette.textMuted }} />} placeholder="••••••" />
             </Form.Item>
             <Form.Item style={{ marginBottom: 12 }}>
               <Button block type="primary" htmlType="submit" loading={loading}>
-                Sign in
+                {t('auth.signIn')}
               </Button>
             </Form.Item>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Typography.Text style={{ color: palette.textMuted, fontSize: 13 }}>
-                No account yet?
+                {t('auth.noAccount')}
               </Typography.Text>
-              <Link to="/register">Create account</Link>
+              <Link to="/register">{t('auth.createAccount')}</Link>
             </div>
           </Form>
         </div>

@@ -108,7 +108,7 @@ export default function StudentDetail() {
                   size={110}
                   strokeColor={riskMeta.color}
                   format={(p) => (
-                    <span style={{ color: '#fff', fontSize: 22, fontWeight: 700 }}>{p}%</span>
+                    <span style={{ color: palette.textStrong, fontSize: 22, fontWeight: 700 }}>{p}%</span>
                   )}
                 />
                 <div>
@@ -138,7 +138,7 @@ export default function StudentDetail() {
                       title={<span style={{ color: palette.textSecondary }}>{INDICATOR_LABELS[key]}</span>}
                       value={val}
                       precision={2}
-                      valueStyle={{ color: '#fff', fontSize: 24 }}
+                      valueStyle={{ color: palette.textStrong, fontSize: 24 }}
                     />
                     <Progress
                       percent={Math.max(0, Math.min(100, Math.round(((val + (key === 'improvement' ? 0.3 : 0)) / (key === 'improvement' ? 0.8 : 1)) * 100)))}
@@ -174,7 +174,7 @@ export default function StudentDetail() {
           pagination={false}
           size="middle"
           columns={[
-            { title: 'Assessment', dataIndex: 'name', render: (v) => <span style={{ color: '#fff' }}>{v}</span> },
+            { title: 'Assessment', dataIndex: 'name', render: (v) => <span style={{ color: palette.textStrong }}>{v}</span> },
             { title: 'Type', dataIndex: 'type', render: (v) => <span style={{ color: palette.textSecondary }}>{v}</span> },
             {
               title: 'Score',
