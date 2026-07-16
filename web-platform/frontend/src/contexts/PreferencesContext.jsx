@@ -15,9 +15,10 @@ function initialMode() {
 
 function initialLang() {
   const saved = localStorage.getItem(LANG_KEY);
-  if (saved === 'zh' || saved === 'en') return saved;
-  // Default to Chinese when the browser prefers it.
-  return (navigator.language || '').toLowerCase().startsWith('zh') ? 'zh' : 'en';
+  if (saved === 'fr' || saved === 'en') return saved;
+  if (saved === 'zh') return 'fr'; // legacy: migrate old Chinese preference to French
+  // Default to English only for English browsers; otherwise French.
+  return (navigator.language || '').toLowerCase().startsWith('en') ? 'en' : 'fr';
 }
 
 /** Interpolate {name} style placeholders. */
@@ -42,7 +43,7 @@ export function PreferencesProvider({ children }) {
   }, [mode]);
 
   useEffect(() => {
-    document.documentElement.setAttribute('lang', lang === 'zh' ? 'zh-CN' : 'en');
+    document.documentElement.setAttribute('lang', lang === 'fr' ? 'fr' : 'en');
     localStorage.setItem(LANG_KEY, lang);
   }, [lang]);
 
@@ -59,7 +60,7 @@ export function PreferencesProvider({ children }) {
       isLight: mode === 'light',
       toggleMode: () => setMode((m) => (m === 'dark' ? 'light' : 'dark')),
       setMode,
-      toggleLang: () => setLang((l) => (l === 'en' ? 'zh' : 'en')),
+      toggleLang: () => setLang((l) => (l === 'en' ? 'fr' : 'en')),
       setLang,
     };
   }, [mode, lang]);

@@ -156,7 +156,7 @@ export default function Dashboard() {
                   overview
                     ? t('dash.lastCalculated', {
                         time: new Date(overview.last_calculated_at).toLocaleString(
-                          lang === 'zh' ? 'zh-CN' : 'en-US'
+                          lang === 'fr' ? 'fr-FR' : 'en-US'
                         ),
                       })
                     : ''

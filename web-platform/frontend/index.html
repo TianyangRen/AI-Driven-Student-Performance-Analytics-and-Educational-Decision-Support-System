@@ -11,7 +11,7 @@
           var m = localStorage.getItem('pref_theme_mode');
           document.documentElement.setAttribute('data-theme', m === 'light' ? 'light' : 'dark');
           var l = localStorage.getItem('pref_lang');
-          if (l === 'zh' || l === 'en') document.documentElement.setAttribute('lang', l === 'zh' ? 'zh-CN' : 'en');
+          if (l === 'fr' || l === 'en') document.documentElement.setAttribute('lang', l);
         } catch (e) {}
       })();
     </script>

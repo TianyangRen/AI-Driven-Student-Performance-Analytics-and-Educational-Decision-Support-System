@@ -119,7 +119,7 @@ export default function Layout() {
           onClick={toggleMode}
         />
       </Tooltip>
-      <Tooltip title={lang === 'en' ? t('ctrl.toZh') : t('ctrl.toEn')}>
+      <Tooltip title={lang === 'en' ? t('ctrl.toFr') : t('ctrl.toEn')}>
         <Button
           className="cockpit-ctrl-btn"
           type="text"
