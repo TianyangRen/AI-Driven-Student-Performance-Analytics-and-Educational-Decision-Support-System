@@ -32,7 +32,7 @@ export default function KpiCard({
         )}
       </div>
       <div>
-        <div className="kpi-card__value" style={{ color: '#fff' }}>
+        <div className="kpi-card__value" style={{ color: palette.textStrong }}>
           {prefix}
           {value}
           {suffix && (

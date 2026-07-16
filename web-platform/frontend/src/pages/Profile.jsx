@@ -21,7 +21,7 @@ export default function Profile() {
               icon={<UserOutlined />}
               style={{ background: 'linear-gradient(135deg,#38bdf8,#6366f1)', boxShadow: '0 10px 30px -8px rgba(56,189,248,0.6)' }}
             />
-            <div style={{ color: '#fff', fontSize: 20, fontWeight: 700, marginTop: 16 }}>
+            <div style={{ color: palette.textStrong, fontSize: 20, fontWeight: 700, marginTop: 16 }}>
               {user.full_name || user.username}
             </div>
             <div style={{ color: palette.textSecondary, marginTop: 4 }}>@{user.username}</div>

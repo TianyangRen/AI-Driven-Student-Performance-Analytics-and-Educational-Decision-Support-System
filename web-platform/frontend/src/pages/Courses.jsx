@@ -59,7 +59,7 @@ export default function Courses() {
               dataIndex: 'code',
               render: (v) => <span style={{ color: palette.cyan, fontWeight: 600 }}>{v}</span>,
             },
-            { title: 'Name', dataIndex: 'name', render: (v) => <span style={{ color: '#fff' }}>{v}</span> },
+            { title: 'Name', dataIndex: 'name', render: (v) => <span style={{ color: palette.textStrong }}>{v}</span> },
             { title: 'Term', dataIndex: 'term', render: (v) => <span style={{ color: palette.textSecondary }}>{v}</span> },
             {
               title: 'Created at',

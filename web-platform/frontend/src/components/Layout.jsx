@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Layout as AntLayout, Menu, Dropdown, Avatar, Grid, Button, Tag } from 'antd';
+import { Layout as AntLayout, Menu, Dropdown, Avatar, Grid, Button, Tag, Tooltip } from 'antd';
 import {
   DashboardOutlined,
   BookOutlined,
@@ -12,24 +12,19 @@ import {
   ExperimentOutlined,
   MenuUnfoldOutlined,
   MenuFoldOutlined,
+  SunOutlined,
+  MoonOutlined,
+  TranslationOutlined,
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.jsx';
+import { useI18n } from '../contexts/PreferencesContext.jsx';
 import { palette } from '../theme/tokens';
 
 const { Header, Sider, Content } = AntLayout;
 const { useBreakpoint } = Grid;
 
-const menuItems = [
-  { key: '/dashboard', icon: <DashboardOutlined />, label: 'Dashboard' },
-  { key: '/courses', icon: <BookOutlined />, label: 'Courses' },
-  { key: '/sections', icon: <ApartmentOutlined />, label: 'Sections' },
-  { key: '/comparisons', icon: <BarChartOutlined />, label: 'Comparisons' },
-  { key: '/cohort-insights', icon: <ClusterOutlined />, label: 'Cohort Insights' },
-  { key: '/reports', icon: <FileTextOutlined />, label: 'Reports' },
-];
-
-function Brand({ collapsed }) {
+function Brand({ collapsed, t }) {
   return (
     <div className="cockpit-brand" style={{ justifyContent: collapsed ? 'center' : 'flex-start' }}>
       <div className="cockpit-brand__logo">
@@ -37,8 +32,8 @@ function Brand({ collapsed }) {
       </div>
       {!collapsed && (
         <div>
-          <div className="cockpit-brand__title">Analytics Cockpit</div>
-          <div className="cockpit-brand__subtitle">EDU ANALYTICS · V1.1</div>
+          <div className="cockpit-brand__title">{t('brand.title')}</div>
+          <div className="cockpit-brand__subtitle">{t('brand.subtitle')}</div>
         </div>
       )}
     </div>
@@ -49,21 +44,31 @@ export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
+  const { t, isLight, toggleMode, lang, toggleLang } = useI18n();
   const screens = useBreakpoint();
   const isMobile = !screens.lg;
   const [collapsed, setCollapsed] = useState(false);
+
+  const menuItems = [
+    { key: '/dashboard', icon: <DashboardOutlined />, label: t('nav.dashboard') },
+    { key: '/courses', icon: <BookOutlined />, label: t('nav.courses') },
+    { key: '/sections', icon: <ApartmentOutlined />, label: t('nav.sections') },
+    { key: '/comparisons', icon: <BarChartOutlined />, label: t('nav.comparisons') },
+    { key: '/cohort-insights', icon: <ClusterOutlined />, label: t('nav.cohortInsights') },
+    { key: '/reports', icon: <FileTextOutlined />, label: t('nav.reports') },
+  ];
 
   const selectedKey =
     menuItems.find((m) => location.pathname.startsWith(m.key))?.key || '/dashboard';
 
   const userMenu = {
     items: [
-      { key: 'profile', icon: <UserOutlined />, label: 'Profile', onClick: () => navigate('/profile') },
+      { key: 'profile', icon: <UserOutlined />, label: t('user.profile'), onClick: () => navigate('/profile') },
       { type: 'divider' },
       {
         key: 'logout',
         icon: <LogoutOutlined />,
-        label: 'Sign out',
+        label: t('user.signOut'),
         danger: true,
         onClick: async () => {
           await logout();
@@ -75,9 +80,9 @@ export default function Layout() {
 
   const siderContent = (
     <>
-      <Brand collapsed={collapsed && !isMobile} />
+      <Brand collapsed={collapsed && !isMobile} t={t} />
       <Menu
-        theme="dark"
+        theme={isLight ? 'light' : 'dark'}
         mode="inline"
         selectedKeys={[selectedKey]}
         items={menuItems}
@@ -92,15 +97,39 @@ export default function Layout() {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
               <span className="live-dot" />
-              <span style={{ color: '#fff', fontWeight: 600 }}>System online</span>
+              <span style={{ color: palette.textStrong, fontWeight: 600 }}>{t('system.online')}</span>
             </div>
-            Inference:&nbsp;
+            {t('system.inference')}&nbsp;
             <Tag color="processing" style={{ marginInlineEnd: 0 }}>
-              Sample data mode
+              {t('system.sampleData')}
             </Tag>
           </div>
         </div>
       )}
+    </>
+  );
+
+  const controls = (
+    <>
+      <Tooltip title={isLight ? t('ctrl.toDark') : t('ctrl.toLight')}>
+        <Button
+          className="cockpit-ctrl-btn"
+          type="text"
+          icon={isLight ? <MoonOutlined /> : <SunOutlined />}
+          onClick={toggleMode}
+        />
+      </Tooltip>
+      <Tooltip title={lang === 'en' ? t('ctrl.toZh') : t('ctrl.toEn')}>
+        <Button
+          className="cockpit-ctrl-btn"
+          type="text"
+          onClick={toggleLang}
+          icon={<TranslationOutlined />}
+          style={{ paddingInline: 10 }}
+        >
+          {t('ctrl.langShort')}
+        </Button>
+      </Tooltip>
     </>
   );
 
@@ -114,8 +143,8 @@ export default function Layout() {
           trigger={null}
           style={{
             position: 'relative',
-            borderRight: '1px solid rgba(94,124,196,0.16)',
-            background: 'linear-gradient(180deg, rgba(13,22,52,0.7), rgba(9,15,38,0.5))',
+            borderRight: '1px solid var(--cockpit-border-soft)',
+            background: 'var(--sider-grad)',
             backdropFilter: 'blur(10px)',
           }}
         >
@@ -132,8 +161,8 @@ export default function Layout() {
             gap: 12,
             padding: '0 20px',
             height: 64,
-            borderBottom: '1px solid rgba(94,124,196,0.16)',
-            background: 'rgba(9,15,38,0.55)',
+            borderBottom: '1px solid var(--cockpit-border-soft)',
+            background: 'var(--header-bg)',
             backdropFilter: 'blur(10px)',
             position: 'sticky',
             top: 0,
@@ -148,8 +177,8 @@ export default function Layout() {
               style={{ color: palette.textSecondary }}
             />
             <div style={{ minWidth: 0, overflow: 'hidden' }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap' }}>
-                AI-Driven Student Performance Analytics & Educational Decision Support
+              <div style={{ fontSize: 14, fontWeight: 600, color: palette.textStrong, whiteSpace: 'nowrap' }}>
+                {t('header.appTitle')}
               </div>
               <div
                 style={{
@@ -159,47 +188,50 @@ export default function Layout() {
                   display: isMobile ? 'none' : 'block',
                 }}
               >
-                COMP8567 · Team 7 · Teaching analytics platform
+                {t('header.appSubtitle')}
               </div>
             </div>
           </div>
 
-          <Dropdown menu={userMenu} trigger={['click']}>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                cursor: 'pointer',
-                padding: '6px 10px',
-                borderRadius: 12,
-                border: '1px solid rgba(94,124,196,0.2)',
-                background: 'rgba(20,32,66,0.5)',
-              }}
-            >
-              <Avatar
-                size={32}
-                style={{ background: 'linear-gradient(135deg,#38bdf8,#6366f1)' }}
-                icon={<UserOutlined />}
-              />
-              {!isMobile && (
-                <div style={{ lineHeight: 1.2 }}>
-                  <div style={{ fontSize: 13, color: '#fff', fontWeight: 600 }}>
-                    {user?.full_name || user?.username}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {controls}
+            <Dropdown menu={userMenu} trigger={['click']}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  cursor: 'pointer',
+                  padding: '6px 10px',
+                  borderRadius: 12,
+                  border: '1px solid var(--cockpit-border)',
+                  background: 'var(--chip-bg)',
+                }}
+              >
+                <Avatar
+                  size={32}
+                  style={{ background: 'linear-gradient(135deg,#38bdf8,#6366f1)' }}
+                  icon={<UserOutlined />}
+                />
+                {!isMobile && (
+                  <div style={{ lineHeight: 1.2 }}>
+                    <div style={{ fontSize: 13, color: palette.textStrong, fontWeight: 600 }}>
+                      {user?.full_name || user?.username}
+                    </div>
+                    <div style={{ fontSize: 11, color: palette.textSecondary }}>
+                      {user?.role === 'ADMIN' ? t('user.administrator') : t('user.instructor')}
+                    </div>
                   </div>
-                  <div style={{ fontSize: 11, color: palette.textSecondary }}>
-                    {user?.role === 'ADMIN' ? 'Administrator' : 'Instructor'}
-                  </div>
-                </div>
-              )}
-            </div>
-          </Dropdown>
+                )}
+              </div>
+            </Dropdown>
+          </div>
         </Header>
 
         {isMobile && (
           <div style={{ padding: '10px 14px 0' }}>
             <Menu
-              theme="dark"
+              theme={isLight ? 'light' : 'dark'}
               mode="horizontal"
               selectedKeys={[selectedKey]}
               items={menuItems}

@@ -11,6 +11,7 @@ import {
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.jsx';
+import { useI18n } from '../contexts/PreferencesContext.jsx';
 import { PageHeader, KpiCard, ChartCard, Panel, RiskTag } from '../components/ui';
 import { buildTrendChart, buildBarChart, buildRiskDonut } from '../theme/echarts';
 import { palette } from '../theme/tokens';
@@ -19,6 +20,7 @@ import * as api from '../api/resources';
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t, lang } = useI18n();
 
   const [summary, setSummary] = useState(null);
   const [sections, setSections] = useState([]);
@@ -35,7 +37,7 @@ export default function Dashboard() {
         setSections(s || []);
         if (s && s.length) setSectionId(s[0].id);
       })
-      .catch(() => message.error('Failed to load dashboard'))
+      .catch(() => message.error(t('dash.loadFailed')))
       .finally(() => setBootLoading(false));
   }, []);
 
@@ -47,7 +49,7 @@ export default function Dashboard() {
         setOverview(o);
         setPredictions(p || []);
       })
-      .catch(() => message.error('Failed to load section overview'))
+      .catch(() => message.error(t('dash.overviewFailed')))
       .finally(() => setPanelLoading(false));
   }, [sectionId]);
 
@@ -59,11 +61,11 @@ export default function Dashboard() {
   const recalc = async () => {
     try {
       await api.recalculate(sectionId);
-      message.success('Recalculation triggered');
+      message.success(t('dash.recalcTriggered'));
       const o = await api.getOverview(sectionId);
       setOverview(o);
     } catch {
-      message.error('Operation failed');
+      message.error(t('dash.opFailed'));
     }
   };
 
@@ -80,8 +82,8 @@ export default function Dashboard() {
   return (
     <div>
       <PageHeader
-        title={`Command Center · Welcome, ${user?.full_name || user?.username}`}
-        subtitle="Global teaching status and key risk alerts at a glance (sample data)"
+        title={t('dash.welcome', { name: user?.full_name || user?.username })}
+        subtitle={t('dash.subtitle')}
         extra={
           sections.length > 0 && (
             <>
@@ -91,11 +93,11 @@ export default function Dashboard() {
                 style={{ minWidth: 220 }}
                 options={sections.map((s) => ({
                   value: s.id,
-                  label: `${s.course_code || 'Course'} · Section ${s.section_code}`,
+                  label: `${s.course_code || t('common.course')} · ${t('common.section')} ${s.section_code}`,
                 }))}
               />
               <Button icon={<ReloadOutlined />} onClick={recalc}>
-                Recalculate
+                {t('common.recalculate')}
               </Button>
             </>
           )
@@ -105,14 +107,14 @@ export default function Dashboard() {
       {/* KPI row — real DB-backed counts from /dashboard/summary */}
       <Row gutter={[16, 16]}>
         <Col xs={12} md={12} lg={6}>
-          <KpiCard label="My courses" value={summary?.kpis?.course_count ?? '—'} icon={<BookOutlined />} color={palette.cyan} />
+          <KpiCard label={t('dash.kpi.courses')} value={summary?.kpis?.course_count ?? '—'} icon={<BookOutlined />} color={palette.cyan} />
         </Col>
         <Col xs={12} md={12} lg={6}>
-          <KpiCard label="Sections" value={summary?.kpis?.section_count ?? '—'} icon={<ApartmentOutlined />} color={palette.violet} />
+          <KpiCard label={t('dash.kpi.sections')} value={summary?.kpis?.section_count ?? '—'} icon={<ApartmentOutlined />} color={palette.violet} />
         </Col>
         <Col xs={12} md={12} lg={6}>
           <KpiCard
-            label="Students"
+            label={t('dash.kpi.students')}
             value={summary?.kpis?.student_count ?? '—'}
             icon={<TeamOutlined />}
             color={palette.teal}
@@ -120,11 +122,11 @@ export default function Dashboard() {
         </Col>
         <Col xs={12} md={12} lg={6}>
           <KpiCard
-            label="High-risk students"
+            label={t('dash.kpi.highRisk')}
             value={summary?.kpis?.high_risk_count ?? '—'}
             icon={<AlertOutlined />}
             color={palette.riskHigh}
-            hint="Needs attention"
+            hint={t('dash.kpi.needsAttention')}
           />
         </Col>
       </Row>
@@ -134,12 +136,12 @@ export default function Dashboard() {
           <Empty
             description={
               <span style={{ color: palette.textSecondary }}>
-                No sections yet. Create a course and section to start analyzing.
+                {t('dash.noSections')}
               </span>
             }
           >
             <Button type="primary" onClick={() => navigate('/courses')}>
-              Create a course
+              {t('common.createCourse')}
             </Button>
           </Empty>
         </Panel>
@@ -149,16 +151,24 @@ export default function Dashboard() {
           <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
             <Col xs={24} lg={16}>
               <ChartCard
-                title="Weekly average score trend"
-                subtitle={overview ? `Last calculated: ${new Date(overview.last_calculated_at).toLocaleString('en-US')}` : ''}
+                title={t('dash.weeklyTrend')}
+                subtitle={
+                  overview
+                    ? t('dash.lastCalculated', {
+                        time: new Date(overview.last_calculated_at).toLocaleString(
+                          lang === 'zh' ? 'zh-CN' : 'en-US'
+                        ),
+                      })
+                    : ''
+                }
                 icon={<ThunderboltOutlined />}
                 height={300}
                 option={
                   overview
                     ? buildTrendChart({
-                        categories: overview.trend.map((t) => `W${t.week}`),
-                        values: overview.trend.map((t) => t.average),
-                        name: 'Average',
+                        categories: overview.trend.map((w) => `W${w.week}`),
+                        values: overview.trend.map((w) => w.average),
+                        name: t('dash.average'),
                         min: 50,
                         max: 100,
                       })
@@ -168,7 +178,7 @@ export default function Dashboard() {
             </Col>
             <Col xs={24} lg={8}>
               <ChartCard
-                title="Risk distribution"
+                title={t('dash.riskDistribution')}
                 icon={<AlertOutlined />}
                 height={300}
                 option={risk ? buildRiskDonut(risk) : {}}
@@ -180,7 +190,7 @@ export default function Dashboard() {
           <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
             <Col xs={24} lg={14}>
               <ChartCard
-                title="Score distribution"
+                title={t('dash.scoreDistribution')}
                 icon={<ApartmentOutlined />}
                 height={320}
                 option={
@@ -188,7 +198,7 @@ export default function Dashboard() {
                     ? buildBarChart({
                         categories: overview.score_distribution.map((d) => d.range),
                         values: overview.score_distribution.map((d) => d.count),
-                        name: 'Students',
+                        name: t('dash.studentsSeries'),
                       })
                     : {}
                 }
@@ -196,14 +206,14 @@ export default function Dashboard() {
             </Col>
             <Col xs={24} lg={10}>
               <Panel
-                title="High-risk watchlist"
+                title={t('dash.watchlist')}
                 icon={<AlertOutlined />}
-                subtitle="Sorted by risk probability — click to view a student"
+                subtitle={t('dash.watchlistSubtitle')}
                 extra={<Tag color="error">{highRisk.length}</Tag>}
                 bodyStyle={{ padding: '6px 8px', maxHeight: 320, overflowY: 'auto' }}
               >
                 {highRisk.length === 0 ? (
-                  <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No high-risk students" />
+                  <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('dash.noHighRisk')} />
                 ) : (
                   highRisk.map((p) => (
                     <div
@@ -228,7 +238,7 @@ export default function Dashboard() {
                         <RiskTag level={p.risk_level} size="small" />
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <Tooltip title="Risk probability">
+                        <Tooltip title={t('dash.riskProbability')}>
                           <span style={{ color: palette.riskHigh, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
                             {(p.probability * 100).toFixed(0)}%
                           </span>
@@ -249,8 +259,8 @@ export default function Dashboard() {
                 <Panel hover bodyStyle={{ padding: 18 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
-                      <div style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>
-                        {s.course_code} · Section {s.section_code}
+                      <div style={{ color: palette.textStrong, fontWeight: 700, fontSize: 16 }}>
+                        {s.course_code} · {t('common.section')} {s.section_code}
                       </div>
                       <div style={{ color: palette.textSecondary, fontSize: 12, marginTop: 4 }}>
                         {s.course_name}
@@ -260,13 +270,13 @@ export default function Dashboard() {
                   </div>
                   <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
                     <Button size="small" type="primary" ghost onClick={() => navigate(`/sections/${s.id}/overview`)}>
-                      Overview
+                      {t('common.overview')}
                     </Button>
                     <Button size="small" onClick={() => navigate(`/sections/${s.id}/predictions`)}>
-                      Prediction
+                      {t('common.prediction')}
                     </Button>
                     <Button size="small" onClick={() => navigate(`/sections/${s.id}/import`)}>
-                      Import
+                      {t('common.import')}
                     </Button>
                   </div>
                 </Panel>

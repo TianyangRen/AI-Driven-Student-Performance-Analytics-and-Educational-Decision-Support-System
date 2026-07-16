@@ -77,7 +77,7 @@ export default function Sections() {
             {
               title: 'Section code',
               dataIndex: 'section_code',
-              render: (v) => <span style={{ color: '#fff' }}>{v}</span>,
+              render: (v) => <span style={{ color: palette.textStrong }}>{v}</span>,
             },
             {
               title: 'Status',

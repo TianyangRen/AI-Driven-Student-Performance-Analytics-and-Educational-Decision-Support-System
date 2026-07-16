@@ -134,7 +134,7 @@ export default function Predictions() {
                 {
                   title: 'Student',
                   dataIndex: 'anonymized_code',
-                  render: (v) => <span style={{ color: '#fff', fontWeight: 600 }}>{v}</span>,
+                  render: (v) => <span style={{ color: palette.textStrong, fontWeight: 600 }}>{v}</span>,
                 },
                 {
                   title: 'Risk probability',

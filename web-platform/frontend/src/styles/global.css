@@ -1,8 +1,61 @@
-:root {
+/* ================= Theme variables ================= */
+:root,
+:root[data-theme='dark'] {
   --cockpit-bg-deep: #070d20;
   --cockpit-border: rgba(94, 124, 196, 0.22);
+  --cockpit-border-soft: rgba(94, 124, 196, 0.16);
   --cockpit-text: #e8f0ff;
+  --cockpit-text-strong: #ffffff;
   --cockpit-text-secondary: #93a7d1;
+
+  --cockpit-body-bg:
+    radial-gradient(1100px 700px at 8% -10%, rgba(56, 189, 248, 0.14), transparent 60%),
+    radial-gradient(1000px 800px at 100% 0%, rgba(129, 140, 248, 0.14), transparent 55%),
+    radial-gradient(900px 700px at 50% 120%, rgba(34, 211, 238, 0.08), transparent 60%),
+    linear-gradient(180deg, #070d20 0%, #060a18 100%);
+
+  --panel-grad: linear-gradient(160deg, rgba(24, 38, 78, 0.72), rgba(13, 22, 52, 0.62));
+  --panel-shadow: 0 18px 40px -22px rgba(2, 8, 28, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --panel-shadow-hover: 0 26px 50px -22px rgba(2, 8, 28, 0.95), 0 0 0 1px rgba(56, 189, 248, 0.15);
+
+  --header-bg: rgba(9, 15, 38, 0.55);
+  --sider-grad: linear-gradient(180deg, rgba(13, 22, 52, 0.7), rgba(9, 15, 38, 0.5));
+  --chip-bg: rgba(20, 32, 66, 0.5);
+
+  --brand-title: #ffffff;
+  --page-title-grad: linear-gradient(90deg, #ffffff, #9ec5ff);
+  --scrollbar-thumb: rgba(94, 124, 196, 0.35);
+  --scrollbar-thumb-hover: rgba(94, 124, 196, 0.55);
+  --hover-accent: rgba(56, 189, 248, 0.08);
+}
+
+:root[data-theme='light'] {
+  --cockpit-bg-deep: #eef2fb;
+  --cockpit-border: rgba(79, 106, 168, 0.22);
+  --cockpit-border-soft: rgba(79, 106, 168, 0.16);
+  --cockpit-text: #1b2a4a;
+  --cockpit-text-strong: #0f1e3d;
+  --cockpit-text-secondary: #5a6b8c;
+
+  --cockpit-body-bg:
+    radial-gradient(1100px 700px at 8% -10%, rgba(56, 189, 248, 0.16), transparent 60%),
+    radial-gradient(1000px 800px at 100% 0%, rgba(129, 140, 248, 0.16), transparent 55%),
+    radial-gradient(900px 700px at 50% 120%, rgba(34, 211, 238, 0.12), transparent 60%),
+    linear-gradient(180deg, #eef2fb 0%, #e4eaf7 100%);
+
+  --panel-grad: linear-gradient(160deg, rgba(255, 255, 255, 0.94), rgba(240, 244, 253, 0.9));
+  --panel-shadow: 0 18px 40px -26px rgba(30, 58, 138, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  --panel-shadow-hover: 0 26px 50px -26px rgba(30, 58, 138, 0.32), 0 0 0 1px rgba(14, 165, 233, 0.25);
+
+  --header-bg: rgba(255, 255, 255, 0.75);
+  --sider-grad: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(238, 242, 251, 0.78));
+  --chip-bg: rgba(255, 255, 255, 0.7);
+
+  --brand-title: #0f1e3d;
+  --page-title-grad: linear-gradient(90deg, #0f1e3d, #2563eb);
+  --scrollbar-thumb: rgba(79, 106, 168, 0.35);
+  --scrollbar-thumb-hover: rgba(79, 106, 168, 0.55);
+  --hover-accent: rgba(14, 165, 233, 0.08);
 }
 
 * {
@@ -24,30 +77,27 @@ body,
 body {
   color: var(--cockpit-text);
   background-color: var(--cockpit-bg-deep);
-  background-image:
-    radial-gradient(1100px 700px at 8% -10%, rgba(56, 189, 248, 0.14), transparent 60%),
-    radial-gradient(1000px 800px at 100% 0%, rgba(129, 140, 248, 0.14), transparent 55%),
-    radial-gradient(900px 700px at 50% 120%, rgba(34, 211, 238, 0.08), transparent 60%),
-    linear-gradient(180deg, #070d20 0%, #060a18 100%);
+  background-image: var(--cockpit-body-bg);
   background-attachment: fixed;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* ---------- Glassmorphism panel ---------- */
 .cockpit-panel {
   position: relative;
-  background: linear-gradient(160deg, rgba(24, 38, 78, 0.72), rgba(13, 22, 52, 0.62));
+  background: var(--panel-grad);
   border: 1px solid var(--cockpit-border);
   border-radius: 16px;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  box-shadow: 0 18px 40px -22px rgba(2, 8, 28, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  box-shadow: var(--panel-shadow);
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
 }
 
 .cockpit-panel--hover:hover {
   transform: translateY(-3px);
   border-color: rgba(56, 189, 248, 0.45);
-  box-shadow: 0 26px 50px -22px rgba(2, 8, 28, 0.95), 0 0 0 1px rgba(56, 189, 248, 0.15);
+  box-shadow: var(--panel-shadow-hover);
 }
 
 /* Top highlight stroke of the panel */
@@ -121,7 +171,7 @@ body {
   font-size: 22px;
   font-weight: 700;
   letter-spacing: 0.01em;
-  background: linear-gradient(90deg, #ffffff, #9ec5ff);
+  background: var(--page-title-grad);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -167,7 +217,7 @@ body {
 .cockpit-brand__title {
   font-weight: 700;
   font-size: 15px;
-  color: #fff;
+  color: var(--brand-title);
   line-height: 1.2;
 }
 
@@ -204,11 +254,11 @@ body {
   height: 9px;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(94, 124, 196, 0.35);
+  background: var(--scrollbar-thumb);
   border-radius: 6px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(94, 124, 196, 0.55);
+  background: var(--scrollbar-thumb-hover);
 }
 ::-webkit-scrollbar-track {
   background: transparent;
@@ -256,6 +306,18 @@ body {
   background: #34d399;
   box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.18);
   animation: cockpit-pulse 1.8s ease-in-out infinite;
+}
+
+/* ---------- Header control (theme / language toggles) ---------- */
+.cockpit-ctrl-btn {
+  color: var(--cockpit-text-secondary) !important;
+  border: 1px solid var(--cockpit-border) !important;
+  background: var(--chip-bg) !important;
+  border-radius: 10px !important;
+}
+.cockpit-ctrl-btn:hover {
+  color: var(--cockpit-text-strong) !important;
+  border-color: rgba(56, 189, 248, 0.45) !important;
 }
 
 /* Responsive: tighten content padding on small screens */

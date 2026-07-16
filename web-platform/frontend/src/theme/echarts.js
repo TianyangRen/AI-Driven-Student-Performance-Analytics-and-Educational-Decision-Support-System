@@ -4,23 +4,30 @@ import { palette, chartColors, RISK_META } from './tokens';
 /**
  * Shared ECharts cockpit-style config and chart builders.
  * Each build* function returns a complete ECharts option; pages just pass data.
+ *
+ * NOTE: all palette reads happen at call time (not module load) so charts
+ * reflect the active light/dark theme when pages re-render.
  */
 
-const axisCommon = {
-  axisLine: { lineStyle: { color: 'rgba(94,124,196,0.35)' } },
-  axisLabel: { color: palette.textSecondary, fontSize: 11 },
-  axisTick: { show: false },
-  splitLine: { lineStyle: { color: 'rgba(94,124,196,0.12)' } },
-};
+function axisCommon() {
+  return {
+    axisLine: { lineStyle: { color: palette.border } },
+    axisLabel: { color: palette.textSecondary, fontSize: 11 },
+    axisTick: { show: false },
+    splitLine: { lineStyle: { color: palette.border } },
+  };
+}
 
-const baseTooltip = {
-  backgroundColor: 'rgba(11,19,46,0.92)',
-  borderColor: 'rgba(94,124,196,0.4)',
-  borderWidth: 1,
-  textStyle: { color: palette.textPrimary, fontSize: 12 },
-  padding: [8, 12],
-  extraCssText: 'backdrop-filter: blur(6px); border-radius:10px;',
-};
+function baseTooltip() {
+  return {
+    backgroundColor: palette.surfaceSolid,
+    borderColor: palette.borderStrong,
+    borderWidth: 1,
+    textStyle: { color: palette.textPrimary, fontSize: 12 },
+    padding: [8, 12],
+    extraCssText: 'backdrop-filter: blur(6px); border-radius:10px;',
+  };
+}
 
 function linearGradient(from, to) {
   return new echarts.graphic.LinearGradient(0, 0, 0, 1, [
@@ -34,9 +41,9 @@ export function buildTrendChart({ categories, values, name = 'Value', color = pa
   return {
     color: chartColors,
     grid: { left: 8, right: 16, top: 28, bottom: 8, containLabel: true },
-    tooltip: { ...baseTooltip, trigger: 'axis' },
-    xAxis: { type: 'category', boundaryGap: false, data: categories, ...axisCommon },
-    yAxis: { type: 'value', min, max, ...axisCommon },
+    tooltip: { ...baseTooltip(), trigger: 'axis' },
+    xAxis: { type: 'category', boundaryGap: false, data: categories, ...axisCommon() },
+    yAxis: { type: 'value', min, max, ...axisCommon() },
     series: [
       {
         name,
@@ -59,9 +66,9 @@ export function buildTrendChart({ categories, values, name = 'Value', color = pa
 export function buildBarChart({ categories, values, color = palette.violet, name = 'Count' }) {
   return {
     grid: { left: 8, right: 16, top: 28, bottom: 8, containLabel: true },
-    tooltip: { ...baseTooltip, trigger: 'axis', axisPointer: { type: 'shadow' } },
-    xAxis: { type: 'category', data: categories, ...axisCommon },
-    yAxis: { type: 'value', ...axisCommon },
+    tooltip: { ...baseTooltip(), trigger: 'axis', axisPointer: { type: 'shadow' } },
+    xAxis: { type: 'category', data: categories, ...axisCommon() },
+    yAxis: { type: 'value', ...axisCommon() },
     series: [
       {
         name,
@@ -86,7 +93,7 @@ export function buildRiskDonut({ high = 0, medium = 0, low = 0 }) {
     { value: low, name: 'LOW', itemStyle: { color: RISK_META.LOW.color } },
   ];
   return {
-    tooltip: { ...baseTooltip, trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+    tooltip: { ...baseTooltip(), trigger: 'item', formatter: '{b}: {c} ({d}%)' },
     legend: {
       bottom: 0,
       icon: 'circle',
@@ -100,12 +107,12 @@ export function buildRiskDonut({ high = 0, medium = 0, low = 0 }) {
         center: ['50%', '44%'],
         avoidLabelOverlap: false,
         padAngle: 3,
-        itemStyle: { borderRadius: 6, borderColor: 'rgba(7,13,32,0.6)', borderWidth: 2 },
+        itemStyle: { borderRadius: 6, borderColor: palette.bgDeep, borderWidth: 2 },
         label: { show: false },
         emphasis: {
           scale: true,
           scaleSize: 6,
-          label: { show: true, fontSize: 15, fontWeight: 600, color: '#fff', formatter: '{c}' },
+          label: { show: true, fontSize: 15, fontWeight: 600, color: palette.textStrong, formatter: '{c}' },
         },
         data,
       },
@@ -116,15 +123,15 @@ export function buildRiskDonut({ high = 0, medium = 0, low = 0 }) {
 /** Multi-dimensional radar chart */
 export function buildRadarChart({ indicators, values, name = 'Current indicators' }) {
   return {
-    tooltip: { ...baseTooltip },
+    tooltip: { ...baseTooltip() },
     radar: {
       indicator: indicators,
       radius: '66%',
       center: ['50%', '52%'],
       axisName: { color: palette.textSecondary, fontSize: 12 },
-      splitLine: { lineStyle: { color: 'rgba(94,124,196,0.18)' } },
+      splitLine: { lineStyle: { color: palette.border } },
       splitArea: { areaStyle: { color: ['rgba(56,189,248,0.03)', 'rgba(129,140,248,0.05)'] } },
-      axisLine: { lineStyle: { color: 'rgba(94,124,196,0.25)' } },
+      axisLine: { lineStyle: { color: palette.border } },
     },
     series: [
       {
@@ -150,9 +157,9 @@ export function buildContribBar({ items }) {
   const sorted = [...items].sort((a, b) => Math.abs(a.value) - Math.abs(b.value));
   return {
     grid: { left: 8, right: 28, top: 10, bottom: 8, containLabel: true },
-    tooltip: { ...baseTooltip, trigger: 'axis', axisPointer: { type: 'shadow' } },
-    xAxis: { type: 'value', ...axisCommon },
-    yAxis: { type: 'category', data: sorted.map((i) => i.name), ...axisCommon },
+    tooltip: { ...baseTooltip(), trigger: 'axis', axisPointer: { type: 'shadow' } },
+    xAxis: { type: 'value', ...axisCommon() },
+    yAxis: { type: 'category', data: sorted.map((i) => i.name), ...axisCommon() },
     series: [
       {
         type: 'bar',
@@ -199,7 +206,7 @@ export function buildHeatmap({ categories, series, min = 50, max = 100 }) {
   const manyCols = categories.length > 6;
   return {
     tooltip: {
-      ...baseTooltip,
+      ...baseTooltip(),
       position: 'top',
       formatter: (p) =>
         `${yLabels[p.value[1]]} · ${categories[p.value[0]]}<br/><b>${p.value[2]}</b>`,
@@ -208,10 +215,10 @@ export function buildHeatmap({ categories, series, min = 50, max = 100 }) {
     xAxis: {
       type: 'category',
       data: categories,
-      ...axisCommon,
-      axisLabel: { ...axisCommon.axisLabel, rotate: manyCols ? 32 : 0, interval: 0 },
+      ...axisCommon(),
+      axisLabel: { ...axisCommon().axisLabel, rotate: manyCols ? 32 : 0, interval: 0 },
     },
-    yAxis: { type: 'category', data: yLabels, ...axisCommon, splitLine: { show: false } },
+    yAxis: { type: 'category', data: yLabels, ...axisCommon(), splitLine: { show: false } },
     visualMap: {
       min: vmMin,
       max: vmMax,
@@ -236,7 +243,7 @@ export function buildHeatmap({ categories, series, min = 50, max = 100 }) {
           textBorderWidth: 2,
           formatter: (p) => p.value[2],
         },
-        itemStyle: { borderColor: 'rgba(7,13,32,0.65)', borderWidth: 2, borderRadius: 4 },
+        itemStyle: { borderColor: palette.bgDeep, borderWidth: 2, borderRadius: 4 },
         emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.5)' } },
       },
     ],
@@ -248,10 +255,10 @@ export function buildGroupedBar({ categories, series }) {
   return {
     color: chartColors,
     grid: { left: 8, right: 16, top: 36, bottom: 8, containLabel: true },
-    tooltip: { ...baseTooltip, trigger: 'axis', axisPointer: { type: 'shadow' } },
+    tooltip: { ...baseTooltip(), trigger: 'axis', axisPointer: { type: 'shadow' } },
     legend: { top: 0, textStyle: { color: palette.textSecondary }, icon: 'roundRect' },
-    xAxis: { type: 'category', data: categories, ...axisCommon },
-    yAxis: { type: 'value', ...axisCommon },
+    xAxis: { type: 'category', data: categories, ...axisCommon() },
+    yAxis: { type: 'value', ...axisCommon() },
     series: series.map((s, idx) => ({
       name: s.name,
       type: 'bar',
