@@ -75,9 +75,20 @@ def cohort_profile(request):
     from analytics.ml.cohort_service import CohortProfileService
 
     k = request.query_params.get("k")
+    if k:
+        try:
+            k = int(k)
+        except (TypeError, ValueError):
+            return Response({"detail": "k must be an integer."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if k < 2 or k > 10:
+            return Response({"detail": "k must be between 2 and 10."},
+                            status=status.HTTP_400_BAD_REQUEST)
+    else:
+        k = None
     try:
         data = CohortProfileService.get(
-            k=int(k) if k else None,
+            k=k,
             refresh=request.query_params.get("refresh") is not None,
             include_clusters=request.query_params.get("clusters") is not None,
         )

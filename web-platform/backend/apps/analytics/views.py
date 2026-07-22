@@ -17,9 +17,14 @@ from rest_framework.permissions import IsAuthenticated
 
 from apps.courses.models import AssessmentScore, CourseSection, Enrollment, Student
 from common import ml_gateway
+from common.pagination import paginate_list
 from common.responses import fail, ok
 
 from . import services
+
+# 探索性聚类的簇数合理区间（cohort_profile ?clusters=1&k=）。
+_MIN_CLUSTERS = 2
+_MAX_CLUSTERS = 10
 
 
 def _get_section_or_404(request, section_id):
@@ -160,7 +165,7 @@ def students(request, section_id):
         for e in enrollments
     ]
     items.sort(key=lambda x: x["average_score"])
-    return ok(items)
+    return paginate_list(request, items)
 
 
 @api_view(["POST"])
@@ -262,8 +267,20 @@ def cohort_profile(request):
         params["refresh"] = 1
     if request.query_params.get("clusters") is not None:
         params["clusters"] = 1
-    if request.query_params.get("k"):
-        params["k"] = request.query_params.get("k")
+    raw_k = request.query_params.get("k")
+    if raw_k:
+        # 校验聚类数：ML 服务用 int(k) 且直接喂给聚类算法，非数字会 500、
+        # 越界（<2 或过大）会让聚类无意义甚至崩溃，故在网关前挡住。
+        try:
+            k = int(raw_k)
+        except (TypeError, ValueError):
+            return fail("VALIDATION_FAILED", "k 必须是整数", 422,
+                        [{"field": "k", "reason": "k must be an integer"}])
+        if k < _MIN_CLUSTERS or k > _MAX_CLUSTERS:
+            return fail("VALIDATION_FAILED",
+                        f"k 必须在 {_MIN_CLUSTERS}–{_MAX_CLUSTERS} 之间", 422,
+                        [{"field": "k", "reason": f"k must be between {_MIN_CLUSTERS} and {_MAX_CLUSTERS}"}])
+        params["k"] = k
     try:
         return ok(ml_gateway.cohort_profile(**params))
     except ml_gateway.MLServiceUnavailable as exc:

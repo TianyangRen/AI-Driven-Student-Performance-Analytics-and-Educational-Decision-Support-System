@@ -1,6 +1,7 @@
 import csv
 import io
 
+from django.conf import settings
 from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -77,6 +78,17 @@ def create_import(request, section_id):
     if not upload:
         return fail("VALIDATION_FAILED", "缺少文件", 422)
 
+    # 上传大小上限：parsers 会把整个文件读进内存并同步落库，必须在解析前挡住
+    # 超大文件，否则会 OOM / 请求超时（settings.MAX_UPLOAD_SIZE_MB，默认 20MB）。
+    max_bytes = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
+    if upload.size is not None and upload.size > max_bytes:
+        return fail(
+            "FILE_TOO_LARGE",
+            f"文件超过大小上限 {settings.MAX_UPLOAD_SIZE_MB}MB",
+            413,
+            [{"field": "file", "reason": f"file exceeds {settings.MAX_UPLOAD_SIZE_MB}MB limit"}],
+        )
+
     import_type = (request.data.get("import_type") or "").upper()
     if import_type not in TEMPLATE_TYPES:
         return fail("VALIDATION_FAILED", f"import_type 必须是 {', '.join(TEMPLATE_TYPES)} 之一", 422)
@@ -103,6 +115,18 @@ def create_import(request, section_id):
         batch.status = "FAILED"
         batch.save(update_fields=["status"])
         return fail("VALIDATION_FAILED", str(exc), 422)
+
+    # 行数上限：解析后同步逐行落库，超量会拖垮请求/DB，直接拒绝整批。
+    if len(rows) > settings.MAX_IMPORT_ROWS:
+        batch.status = "FAILED"
+        batch.error_details = [{"row": 0, "column": "",
+                                "value": len(rows),
+                                "reason": f"too many rows (max {settings.MAX_IMPORT_ROWS})"}]
+        batch.save(update_fields=["status", "error_details"])
+        return fail("TOO_MANY_ROWS",
+                    f"数据行数 {len(rows)} 超过单次导入上限 {settings.MAX_IMPORT_ROWS}",
+                    413, [{"field": "file",
+                           "reason": f"row count exceeds {settings.MAX_IMPORT_ROWS}"}])
 
     services.process_import(batch, rows, import_type)
 

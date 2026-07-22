@@ -9,6 +9,8 @@ from decimal import Decimal, InvalidOperation
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.validators import validate_email
 from django.db import transaction
 
 from apps.courses.models import (
@@ -24,6 +26,15 @@ from .templates import Column, columns_for
 # --------------------------------------------------------------------- #
 # 逐行校验：把字符串值按列类型转换，返回 (coerced_dict, [errors])
 # --------------------------------------------------------------------- #
+def _range_error(col: Column, value) -> Optional[str]:
+    """数值列的上下界校验（min_value / max_value 均为含端点）。"""
+    if col.min_value is not None and value < col.min_value:
+        return f"must be >= {col.min_value}"
+    if col.max_value is not None and value > col.max_value:
+        return f"must be <= {col.max_value}"
+    return None
+
+
 def _coerce_value(col: Column, raw: str) -> Tuple[Any, Optional[str]]:
     """返回 (值, 错误原因)。错误原因非 None 表示该格校验失败。"""
     val = (raw or "").strip()
@@ -34,16 +45,26 @@ def _coerce_value(col: Column, raw: str) -> Tuple[Any, Optional[str]]:
 
     if col.type == "str":
         return val, None
+    if col.type == "email":
+        try:
+            validate_email(val)
+        except DjangoValidationError:
+            return None, "must be a valid email"
+        return val, None
     if col.type == "int":
         try:
-            return int(val), None
+            num = int(val)
         except ValueError:
             return None, "must be an integer"
+        reason = _range_error(col, num)
+        return (None, reason) if reason else (num, None)
     if col.type == "decimal":
         try:
-            return Decimal(val), None
+            num = Decimal(val)
         except InvalidOperation:
             return None, "must be a number"
+        reason = _range_error(col, num)
+        return (None, reason) if reason else (num, None)
     if col.type == "date":
         try:
             return datetime.strptime(val, "%Y-%m-%d").date(), None

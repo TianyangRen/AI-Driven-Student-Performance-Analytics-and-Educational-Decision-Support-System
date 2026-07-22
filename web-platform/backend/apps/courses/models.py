@@ -29,7 +29,7 @@ class CourseSection(models.Model):
 class Student(models.Model):
     student_no = models.CharField(max_length=50, unique=True)
     full_name = models.CharField(max_length=100, blank=True, null=True)
-    email = models.CharField(max_length=120, blank=True, null=True)
+    email = models.EmailField(max_length=120, blank=True, null=True)
     anonymized_code = models.CharField(max_length=64, unique=True)
 
     class Meta:

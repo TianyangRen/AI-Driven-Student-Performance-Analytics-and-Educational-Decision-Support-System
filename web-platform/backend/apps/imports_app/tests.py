@@ -1,6 +1,7 @@
 import io
 
 from django.contrib.auth import get_user_model
+from django.test import override_settings
 from rest_framework.test import APITestCase
 
 from apps.courses.models import (
@@ -139,3 +140,69 @@ class ImportFlowTests(APITestCase):
     def test_template_bad_type(self):
         resp = self.client.get("/api/v1/imports/template?type=NOPE")
         self.assertEqual(resp.status_code, 422)
+
+    # ---------- 数值列范围校验 (#4) ----------
+    def test_score_negative_weight_rejected(self):
+        self._seed_roster()
+        text = ("student_no,assessment_name,assessment_type,max_score,weight,week_no,score\n"
+                "S-001,Quiz 1,QUIZ,50,-5,1,40\n")  # weight 为负
+        resp = self._upload("SCORE", "score.csv", text)
+        data = resp.json()["data"]
+        self.assertEqual(data["status"], "FAILED")
+        self.assertEqual(data["valid_rows"], 0)
+        err = self.client.get(f"/api/v1/imports/{data['batch_id']}/errors").json()["data"]["errors"]
+        self.assertTrue(any(e["column"] == "weight" for e in err))
+
+    def test_score_week_no_out_of_range_rejected(self):
+        self._seed_roster()
+        text = ("student_no,assessment_name,assessment_type,max_score,weight,week_no,score\n"
+                "S-001,Quiz 1,QUIZ,50,5,999,40\n")  # week_no 超界
+        resp = self._upload("SCORE", "score.csv", text)
+        data = resp.json()["data"]
+        self.assertEqual(data["status"], "FAILED")
+        err = self.client.get(f"/api/v1/imports/{data['batch_id']}/errors").json()["data"]["errors"]
+        self.assertTrue(any(e["column"] == "week_no" for e in err))
+
+    def test_activity_negative_metric_rejected(self):
+        self._seed_roster()
+        text = ("student_no,activity_date,activity_type,metric_value\n"
+                "S-001,2026-06-15,ATTENDANCE,-1\n")  # metric_value 为负
+        resp = self._upload("ACTIVITY", "act.csv", text)
+        data = resp.json()["data"]
+        self.assertEqual(data["status"], "FAILED")
+        self.assertEqual(StudentActivity.objects.count(), 0)
+
+    def test_roster_invalid_email_rejected(self):
+        text = ("student_no,full_name,email\n"
+                "S-001,Alice,a@x.com\n"       # ok
+                "S-002,Bob,not-an-email\n")   # email 非法
+        resp = self._upload("ROSTER", "roster.csv", text)
+        data = resp.json()["data"]
+        self.assertEqual(data["status"], "PARTIAL")
+        self.assertEqual(data["valid_rows"], 1)
+        err = self.client.get(f"/api/v1/imports/{data['batch_id']}/errors").json()["data"]["errors"]
+        self.assertTrue(any(e["column"] == "email" for e in err))
+
+    # ---------- 行数上限 (#5) ----------
+    def test_import_too_many_rows_rejected(self):
+        self._seed_roster()
+        with override_settings(MAX_IMPORT_ROWS=3):
+            rows = "\n".join(f"S-{i:03d},Name{i},n{i}@x.com" for i in range(10))
+            text = "student_no,full_name,email\n" + rows + "\n"
+            resp = self._upload("ROSTER", "big.csv", text)
+        self.assertEqual(resp.status_code, 413)
+        self.assertEqual(resp.json()["error"]["code"], "TOO_MANY_ROWS")
+        batch = ImportBatch.objects.latest("id")
+        self.assertEqual(batch.status, "FAILED")
+
+    # ---------- 上传大小上限 ----------
+    def test_upload_too_large_rejected(self):
+        # 把上限压到 0MB，任何非空文件都应被 413 挡在解析之前
+        with override_settings(MAX_UPLOAD_SIZE_MB=0):
+            text = "student_no,full_name,email\nS-001,Alice,a@x.com\n"
+            resp = self._upload("ROSTER", "roster.csv", text)
+        self.assertEqual(resp.status_code, 413)
+        self.assertEqual(resp.json()["error"]["code"], "FILE_TOO_LARGE")
+        # 被挡下：不应落库任何学生，也不应产生 batch 记录
+        self.assertEqual(Student.objects.count(), 0)
+        self.assertEqual(ImportBatch.objects.count(), 0)

@@ -13,13 +13,37 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 
 from apps.courses.models import CourseSection
-from common.responses import ok
+from common.pagination import paginate_list
+from common.responses import ok, fail
 
 from .models import PredictionRun, RiskPrediction
 from . import services
 
 _DISCLAIMER = ("This result is a teaching-support signal only and is not an "
                "automated academic decision.")
+
+# 教学周合理上限：cutoff 只用于「按周截断早期考核」，取一学年 53 周作宽松上界。
+_MAX_CUTOFF_WEEK = 53
+
+
+def _parse_cutoff_week(raw):
+    """把请求里的 feature_cutoff_week 规范成 int 或 None。
+
+    Returns (value, error_message)。value 为 None 表示不按周截断（合法）。
+    校验失败时 error_message 非空——避免把字符串/负数原样带到
+    services 里做 `week_no <= cutoff_week` 比较而抛 TypeError → 500。
+    """
+    if raw is None or raw == "":
+        return None, None
+    if isinstance(raw, bool):  # bool 是 int 子类，单独挡掉
+        return None, "feature_cutoff_week 必须是整数"
+    try:
+        week = int(raw)
+    except (TypeError, ValueError):
+        return None, "feature_cutoff_week 必须是整数"
+    if week < 1 or week > _MAX_CUTOFF_WEEK:
+        return None, f"feature_cutoff_week 必须在 1–{_MAX_CUTOFF_WEEK} 之间"
+    return week, None
 
 
 @api_view(["POST"])
@@ -30,7 +54,10 @@ def run_prediction(request, section_id):
     Body(可选): {"feature_cutoff_week": int}  只用该周及之前的考核建特征（防泄漏）。
     """
     section = get_object_or_404(CourseSection, pk=section_id)
-    cutoff_week = request.data.get("feature_cutoff_week")
+    cutoff_week, err = _parse_cutoff_week(request.data.get("feature_cutoff_week"))
+    if err:
+        return fail("VALIDATION_FAILED", err, 422,
+                    [{"field": "feature_cutoff_week", "reason": err}])
     run = services.run_section_prediction(section, cutoff_week=cutoff_week)
 
     return ok({
@@ -71,7 +98,10 @@ def list_predictions(request, section_id):
         }
         for p in preds
     ]
-    return ok(items, meta={"run_id": latest_run.id, "model_version": latest_run.model_version.name})
+    return paginate_list(request, items, extra_meta={
+        "run_id": latest_run.id,
+        "model_version": latest_run.model_version.name,
+    })
 
 
 @api_view(["GET"])
