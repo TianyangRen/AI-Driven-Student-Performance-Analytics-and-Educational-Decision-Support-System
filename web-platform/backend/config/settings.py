@@ -120,6 +120,8 @@ CORS_ALLOW_CREDENTIALS = True
 MODEL_ARTIFACT_DIR = env("MODEL_ARTIFACT_DIR", default=str(BASE_DIR / "data" / "models"))
 REPORT_OUTPUT_DIR = env("REPORT_OUTPUT_DIR", default=str(BASE_DIR / "data" / "reports"))
 MAX_UPLOAD_SIZE_MB = env.int("MAX_UPLOAD_SIZE_MB", default=20)
+# 单次导入的数据行数上限：解析后同步逐行落库，避免超大文件拖垮请求/DB。
+MAX_IMPORT_ROWS = env.int("MAX_IMPORT_ROWS", default=5000)
 
 # --- ML 服务（组员的 backend/，独立跑在 :8000）------------------------- #
 # web-platform 后端通过 HTTP 调用它的分析/预测接口，见 common/ml_gateway.py。
