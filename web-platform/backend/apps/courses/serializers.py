@@ -1,9 +1,18 @@
+import re
 from decimal import Decimal
 
 from rest_framework import serializers
 
 from apps.imports_app.templates import MAX_WEEK_NO  # 单一来源：教学周上限
 from .models import Course, CourseSection, Student, Enrollment, Assessment
+
+# section_code / course code 只允许字母、数字与连字符（如 01 / L01 / COMP8567）；
+# 拒绝 !@#$ 等符号，避免脏数据混入唯一键与展示。
+SECTION_CODE_RE = re.compile(r"^[A-Z0-9-]+$")
+COURSE_CODE_RE = re.compile(r"^[A-Z0-9-]+$")
+# term 需要容纳空格（如 "Summer 2026" / "2025-2026"），额外放行空格与连字符，
+# 但仍拒绝 !@#$ 等符号。
+TERM_RE = re.compile(r"^[A-Za-z0-9 -]+$")
 
 
 class CourseSerializer(serializers.ModelSerializer):
@@ -14,7 +23,22 @@ class CourseSerializer(serializers.ModelSerializer):
 
     def validate_code(self, value):
         # 规范化为大写，避免 COMP8567 / comp8567 被 unique_together 当成两门课
-        return value.strip().upper()
+        code = value.strip().upper()
+        if not code:
+            raise serializers.ValidationError("Course code cannot be empty")
+        if not COURSE_CODE_RE.match(code):
+            raise serializers.ValidationError(
+                "Course code may only contain letters, digits and hyphens")
+        return code
+
+    def validate_term(self, value):
+        term = value.strip()
+        if not term:
+            raise serializers.ValidationError("Term cannot be empty")
+        if not TERM_RE.match(term):
+            raise serializers.ValidationError(
+                "Term may only contain letters, digits, spaces and hyphens")
+        return term
 
 
 class CourseSectionSerializer(serializers.ModelSerializer):
@@ -37,7 +61,13 @@ class CourseSectionSerializer(serializers.ModelSerializer):
         return fields
 
     def validate_section_code(self, value):
-        return value.strip().upper()
+        code = value.strip().upper()
+        if not code:
+            raise serializers.ValidationError("Section code cannot be empty")
+        if not SECTION_CODE_RE.match(code):
+            raise serializers.ValidationError(
+                "Section code may only contain letters, digits and hyphens")
+        return code
 
 
 class StudentSerializer(serializers.ModelSerializer):
