@@ -5,8 +5,10 @@ const unwrap = (r) => r.data?.data;
 /* Courses / sections */
 export const listCourses = () => client.get('/courses').then(unwrap);
 export const createCourse = (payload) => client.post('/courses', payload).then(unwrap);
+export const updateCourse = (id, payload) => client.patch(`/courses/${id}`, payload).then(unwrap);
 export const listSections = () => client.get('/sections').then(unwrap);
 export const createSection = (payload) => client.post('/sections', payload).then(unwrap);
+export const updateSection = (id, payload) => client.patch(`/sections/${id}`, payload).then(unwrap);
 
 /* Dashboard (real DB-backed summary) */
 export const getDashboardSummary = () => client.get('/dashboard/summary').then(unwrap);
